@@ -328,8 +328,7 @@ public class jdbcpostgreSQL {
             ResultSet result = stmt.executeQuery(sqlStatement);
             while (result.next()) {
                 System.out.println(result.getString("userId") + " | \t" +  
-                                  result.getString("nameLookup") + " | \t" + 
-                                  result.getString("primaryname") + " | \t" +  
+                                  result.getString("primaryname") + " | \t" + 
                                   result.getString("cardinality")
                                   );                      
             } 
