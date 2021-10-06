@@ -323,12 +323,11 @@ public class jdbcpostgreSQL {
           }
           case 19: {
             //19  print number of rating each users gave
-            String sqlStatement = "SELECT Users.userId, NameLookup.primaryName, cardinality(rating) FROM Users INNER JOIN NameLookup ON Users.userId=NameLookup.nameId";   //19 query
+            String sqlStatement = "SELECT Users.userId, cardinality(rating) FROM Users";   //19 query
             System.out.println("--------------------Query Results--------------------");
             ResultSet result = stmt.executeQuery(sqlStatement);
             while (result.next()) {
                 System.out.println(result.getString("userId") + " | \t" +  
-                                  result.getString("primaryname") + " | \t" + 
                                   result.getString("cardinality")
                                   );                      
             } 
