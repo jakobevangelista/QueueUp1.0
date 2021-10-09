@@ -13,24 +13,25 @@ import java.time.format.DateTimeFormatter;
 
 public class CViewer extends JFrame implements ActionListener{
 	private int userId;
-	JFrame f;
-	ArrayList<String> ratingList;
-	ArrayList<String> dateList;
-	ArrayList<String> titleList;
-	ArrayList<LocalDate> dateListSorted;
-	ArrayList<Integer> titleListSorted;
-	ArrayList<Integer> ratingListSorted;
+	// unsorted instances of ratings, dates, and titles
+	private ArrayList<String> ratingList;
+	private ArrayList<String> dateList;
+	private ArrayList<String> titleList;
+	// sorted instances of ratings, dates, and titles
+	private ArrayList<LocalDate> dateListSorted;
+	private ArrayList<Integer> titleListSorted;
+	private ArrayList<Integer> ratingListSorted;
 	
 	
-	public CViewer(int uid, JFrame frame) {
+	public CViewer(int uid) {
 		userId = uid;
-		f = frame;
 		if(!fetchWatchHistory(uid)) {
 			System.exit(-1);
 		}
 		// Assert that the lists are equal sizes and not 0. You must use the argument -ea during execution in order for this to do anything.
 		assert ratingList.size() == dateList.size() && dateList.size() == titleList.size() && titleList.size() != 0: "Invalid list sizes.";
 		sortByDate();
+		askForHistoryLength();
 	}
 	
 	//open a connection, grab ratings,dates,and titles, and convert them to java.utils.list
@@ -79,7 +80,8 @@ public class CViewer extends JFrame implements ActionListener{
 		return true;
 	}
 	
-	//
+	// this function sorts our rating list, title list, and date list by date
+	// It runs in O(n^2) time because it uses bubble sort
 	private void sortByDate() {
 		// convert the list of string dates to java.time.LocalDateTimes so we can compare them
 		ArrayList<LocalDate> dates = new ArrayList<LocalDate>();
@@ -89,6 +91,7 @@ public class CViewer extends JFrame implements ActionListener{
 			dates.add(d);
 		}
 		
+		//create a bunch of array lists to be tampered with during sorting process
 		ArrayList<LocalDate> dateSorted = new ArrayList<LocalDate>();
 		ArrayList<Integer> titleSorted = new ArrayList<Integer>();
 		ArrayList<Integer> ratingSorted = new ArrayList<Integer>();
@@ -117,6 +120,20 @@ public class CViewer extends JFrame implements ActionListener{
 		dateListSorted = dateSorted;
 		titleListSorted = titleSorted;
 		ratingListSorted = ratingSorted;
+	}
+	
+	private void askForHistoryLength() {
+		JFrame f = new JFrame("");
+		f.getContentPane().removeAll();
+		JLabel lengthOfHistoryLabel = new JLabel("label");
+		lengthOfHistoryLabel.setBounds(10,10, 250, 20);
+		lengthOfHistoryLabel.setText("How many movies do you want to display?");
+		f.add(lengthOfHistoryLabel);
+		
+		JTextField field = new JTextField("field");
+		field.setText("");
+		field.setBounds(10, 265, 50, 20);
+		f.add(field);
 	}
 	
 	@Override
