@@ -17,6 +17,9 @@ public class CViewer extends JFrame implements ActionListener{
 	ArrayList<String> ratingList;
 	ArrayList<String> dateList;
 	ArrayList<String> titleList;
+	ArrayList<LocalDate> dateListSorted;
+	ArrayList<Integer> titleListSorted;
+	ArrayList<Integer> ratingListSorted;
 	
 	
 	public CViewer(int uid, JFrame frame) {
@@ -77,7 +80,7 @@ public class CViewer extends JFrame implements ActionListener{
 	}
 	
 	//
-	public void sortByDate() {
+	private void sortByDate() {
 		// convert the list of string dates to java.time.LocalDateTimes so we can compare them
 		ArrayList<LocalDate> dates = new ArrayList<LocalDate>();
 		DateTimeFormatter f = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -86,8 +89,12 @@ public class CViewer extends JFrame implements ActionListener{
 			dates.add(d);
 		}
 		
-		ArrayList<Integer> indicesMap = new ArrayList<Integer>();
 		ArrayList<LocalDate> dateSorted = new ArrayList<LocalDate>();
+		ArrayList<Integer> titleSorted = new ArrayList<Integer>();
+		ArrayList<Integer> ratingSorted = new ArrayList<Integer>();
+		ArrayList<String> titleTemp = new ArrayList<String>(titleList);
+		ArrayList<String> ratingTemp = new ArrayList<String>(ratingList);
+		
 		boolean sorted = false;
 		while(!sorted) {
 			if(dates.size() == 0) {
@@ -101,15 +108,15 @@ public class CViewer extends JFrame implements ActionListener{
 				}
 			}
 			dateSorted.add(dates.get(minIndex));
+			titleSorted.add(Integer.valueOf(titleTemp.get(minIndex)));
+			ratingSorted.add(Integer.valueOf(ratingTemp.get(minIndex)));
 			dates.remove(minIndex);
-			indicesMap.add(minIndex);
+			titleTemp.remove(minIndex);
+			ratingTemp.remove(minIndex);
 		}
-		
-		
-		
-		for(int i = 0; i < dateSorted.size(); i++) {
-			System.out.println(dateSorted.get(i));
-		}
+		dateListSorted = dateSorted;
+		titleListSorted = titleSorted;
+		ratingListSorted = ratingSorted;
 	}
 	
 	@Override
