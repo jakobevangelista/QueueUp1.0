@@ -18,9 +18,11 @@ public class CViewer extends JFrame implements ActionListener{
 	private ArrayList<String> dateList;
 	private ArrayList<String> titleList;
 	// sorted instances of ratings, dates, and titles
-	private ArrayList<LocalDate> dateListSorted;
-	private ArrayList<Integer> titleListSorted;
-	private ArrayList<Integer> ratingListSorted;
+	static private ArrayList<LocalDate> dateListSorted;
+	static private ArrayList<Integer> titleListSorted;
+	static private ArrayList<Integer> ratingListSorted;
+	static private ArrayList<String> titleListNameSorted = new ArrayList<String>();
+
 	
 	
 	public CViewer(int uid) {
@@ -28,17 +30,24 @@ public class CViewer extends JFrame implements ActionListener{
 		if(!fetchWatchHistory(uid)) {
 			System.exit(-1);
 		}
-		createGUI();
 		// Assert that the lists are equal sizes and not 0. You must use the argument -ea during execution in order for this to do anything.
 		assert ratingList.size() == dateList.size() && dateList.size() == titleList.size() && titleList.size() != 0: "Invalid list sizes.";
 		sortByDate();
 		askForHistoryLength();
+		callDatabase();
+		createGUI();
+
 	}
 
     static JFrame contentViewer;
     static public void createGUI(){
-        contentViewer = new JFrame();
-        contentViewer.setSize(800,800);
+		//Setting up JFrame and pertint information
+        contentViewer = new JFrame("Content Viewing Experience");
+		System.out.print(titleListNameSorted);
+
+
+		//Setting up the layout and important information
+		contentViewer.setSize(800,800);
         contentViewer.show();
 
 
@@ -131,6 +140,45 @@ public class CViewer extends JFrame implements ActionListener{
 		dateListSorted = dateSorted;
 		titleListSorted = titleSorted;
 		ratingListSorted = ratingSorted;
+
+	}
+
+	public void callDatabase(){
+		//This portion is for connecting to the database
+		Connection conn = null;
+		boolean toReturn = false;
+		try {
+		  Class.forName("org.postgresql.Driver");
+		  conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+			  "csce315903_14user", "GROUP14CS315");
+		} catch (Exception e) {
+		  e.printStackTrace();
+		  System.err.println(e.getClass().getName()+": "+e.getMessage());
+		  System.exit(0);
+		}
+			
+		//This portion is for grabbing all the users from the database
+		try{
+		  Statement stmt = conn.createStatement();
+		  for(int i = 0; i < titleListSorted.size()-1; i++){
+			JOptionPane.showMessageDialog(null, "Grabbing information...");
+			String sqlStatement = "SELECT originalTitle FROM content WHERE titleId=" + titleListSorted.get(i) +";";
+			ResultSet result = stmt.executeQuery(sqlStatement);
+			while (result.next()) {
+				titleListNameSorted.add(result.getString("originalTitle"));
+			}
+		  }		 
+		} catch (Exception e){
+		  JOptionPane.showMessageDialog(contentViewer,e);
+		}
+	
+
+		//This portion is for closing and reporting the connection
+		try {
+		  conn.close();
+		} catch(Exception e) {
+		  JOptionPane.showMessageDialog(contentViewer,"Error in database");
+		}
 	}
 	
 	private void askForHistoryLength() {
@@ -154,7 +202,7 @@ public class CViewer extends JFrame implements ActionListener{
 	}
 
     public static void main(String[] args){
-
+		//Nothing needs to occur here as we are running main from front page
 	}
 
 }

@@ -95,7 +95,7 @@ public class FrontPage extends JFrame implements ActionListener {
     //This portion is for grabbing all the users from the database
     try{
       Statement stmt = conn.createStatement();
-      String sqlStatement = "SELECT userId FROM users WHERE userId=" + userNum;
+      String sqlStatement = "SELECT userId FROM users WHERE userId=" + userNum +";";
       ResultSet result = stmt.executeQuery(sqlStatement);
       while (result.next()) {
         if(result.getString("userId").equals(userNum)){
@@ -127,8 +127,9 @@ public class FrontPage extends JFrame implements ActionListener {
           boolean toCheck = newInterface.callDatabase(userId);
           if(toCheck){
             JOptionPane.showMessageDialog(FrontGUI,"Success, Opening Account");
-            CViewer newContent = new CViewer(Integer.parseInt(this.userId));
             FrontGUI.dispose();
+            CViewer newContent = new CViewer(Integer.parseInt(this.userId));
+           
           } else {
             JOptionPane.showMessageDialog(FrontGUI,"User ID Invalid, Please Try Again");
           }
