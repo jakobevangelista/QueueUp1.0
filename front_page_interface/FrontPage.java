@@ -1,3 +1,4 @@
+package project2;
 import java.sql.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -5,10 +6,10 @@ import java.awt.*;
 import javax.swing.border.Border;
 
 
-
 public class FrontPage extends JFrame implements ActionListener {
   //Creating the interface which will be shown to the user
   static JFrame FrontGUI;
+
 
   //String which is going to hold the entered user Id
   String userId = "";
@@ -91,7 +92,6 @@ public class FrontPage extends JFrame implements ActionListener {
     JOptionPane.showMessageDialog(FrontGUI,"Checking Database...");
 
     
-    
     //This portion is for grabbing all the users from the database
     try{
       Statement stmt = conn.createStatement();
@@ -112,9 +112,7 @@ public class FrontPage extends JFrame implements ActionListener {
     } catch(Exception e) {
       JOptionPane.showMessageDialog(FrontGUI,"Error in database");
     }
-
     return toReturn;
-
   }
 
   // if button is pressed
@@ -129,8 +127,8 @@ public class FrontPage extends JFrame implements ActionListener {
           boolean toCheck = newInterface.callDatabase(userId);
           if(toCheck){
             JOptionPane.showMessageDialog(FrontGUI,"Success, Opening Account");
+            CViewer newContent = new CViewer(Integer.parseInt(this.userId));
             FrontGUI.dispose();
-            //CALL MARKS CLASS
           } else {
             JOptionPane.showMessageDialog(FrontGUI,"User ID Invalid, Please Try Again");
           }
