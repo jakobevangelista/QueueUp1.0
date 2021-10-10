@@ -1,6 +1,7 @@
 package project2;
 import java.sql.*;
 import java.awt.event.*;
+import java.awt.*;
 import javax.swing.*;
 import java.awt.BorderLayout;
 import java.util.ArrayList;
@@ -11,8 +12,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+
 public class CViewer extends JFrame implements ActionListener{
 	private int userId;
+	static JFrame contentViewer;
 	// unsorted instances of ratings, dates, and titles
 	private ArrayList<String> ratingList;
 	private ArrayList<String> dateList;
@@ -22,8 +25,14 @@ public class CViewer extends JFrame implements ActionListener{
 	static private ArrayList<Integer> titleListSorted;
 	static private ArrayList<Integer> ratingListSorted;
 	static private ArrayList<String> titleListNameSorted = new ArrayList<String>();
+	//instances of different dates for the watch history
+	static private ArrayList<LocalDate> pastTenDates =  new ArrayList<LocalDate>();
+	static private ArrayList<String> pastTenTitle =  new ArrayList<String>();
+	static private ArrayList<LocalDate> pastHundredDates =  new ArrayList<LocalDate>();
+	static private ArrayList<String> pastHundredTitles =  new ArrayList<String>();
+	static private ArrayList<LocalDate> allTimeDates =  new ArrayList<LocalDate>();
+	static private ArrayList<String> allTimeTitles=  new ArrayList<String>();
 
-	
 	
 	public CViewer(int uid) {
 		userId = uid;
@@ -39,15 +48,74 @@ public class CViewer extends JFrame implements ActionListener{
 
 	}
 
-    static JFrame contentViewer;
+
+	public static String ConvertDate(LocalDate LocalDate){
+		return LocalDate.format(DateTimeFormatter.ofPattern("LLLL dd yyyy"));
+	}
+
     static public void createGUI(){
 		//Setting up JFrame and pertint information
         contentViewer = new JFrame("Content Viewing Experience");
-		System.out.print(titleListNameSorted);
 
+		//Creating some components which will be used within the interface
+
+		JLabel tenDates = new JLabel("Watch History: " + ConvertDate(pastTenDates.get(0)) + " - " + ConvertDate(pastTenDates.get(pastTenDates.size()-1)));
+		JLabel hundredDates = new JLabel("Watch History: " + ConvertDate(pastHundredDates.get(0)) + " - " + ConvertDate(pastHundredDates.get(pastHundredDates.size()-1)));
+		JLabel allDates = new JLabel("Watch History: " + ConvertDate(allTimeDates.get(0)) + " - " + ConvertDate(allTimeDates.get(allTimeDates.size()-1)));
+	    tenDates.setFont(new Font("Times New Roman", Font.PLAIN, 20));
+	    hundredDates.setFont(new Font("Times New Roman", Font.PLAIN, 20));
+		allDates.setFont(new Font("Times New Roman", Font.PLAIN, 20));
+
+
+		
+		
+		//Adding all the elements from ten recent dates to the JFrame
+		DefaultListModel dlmTen = new DefaultListModel();
+		JList listTen = new JList(dlmTen);
+		JScrollPane scrollPaneTen = new JScrollPane(listTen);
+
+		for(String word : pastTenTitle){
+			dlmTen.addElement(word);
+		}
+		listTen.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+
+		//Adding all the elements from 100 recent dates to the JFrame
+		DefaultListModel dlmHun = new DefaultListModel();
+		JList listHun = new JList(dlmHun);
+		JScrollPane scrollPaneHun = new JScrollPane(listHun);
+
+		for(String word : pastHundredTitles){
+			dlmHun.addElement(word);
+		}
+		listHun.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+
+
+		//Adding all the elements from all time recent titless
+		DefaultListModel dlmAll = new DefaultListModel();
+		JList listAll = new JList(dlmAll);
+		JScrollPane scrollPaneAll = new JScrollPane(listAll);
+
+		for(String word : allTimeTitles){
+			dlmAll.addElement(word);
+		}
+		listAll.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+
+
+
+
+		
+		//Adding the components to the JFrame
+		contentViewer.add(tenDates);
+		contentViewer.add(scrollPaneTen);
+		contentViewer.add(hundredDates);
+		contentViewer.add(scrollPaneHun);
+		contentViewer.add(allDates);
+		contentViewer.add(scrollPaneAll);
+		
 
 		//Setting up the layout and important information
-		contentViewer.setSize(800,800);
+		contentViewer.setLayout(new GridLayout(3,2, 40, 20));
+		contentViewer.setSize(900,1000);
         contentViewer.show();
 
 
@@ -160,8 +228,11 @@ public class CViewer extends JFrame implements ActionListener{
 		//This portion is for grabbing all the users from the database
 		try{
 		  Statement stmt = conn.createStatement();
+		  JOptionPane.showMessageDialog(null, "Please wait, this could take a while...");
 		  for(int i = 0; i < titleListSorted.size()-1; i++){
-			JOptionPane.showMessageDialog(null, "Grabbing information...");
+			if(i == titleListSorted.size()/2){
+				JOptionPane.showMessageDialog(null, "About half way done...");
+			}
 			String sqlStatement = "SELECT originalTitle FROM content WHERE titleId=" + titleListSorted.get(i) +";";
 			ResultSet result = stmt.executeQuery(sqlStatement);
 			while (result.next()) {
@@ -179,6 +250,28 @@ public class CViewer extends JFrame implements ActionListener{
 		} catch(Exception e) {
 		  JOptionPane.showMessageDialog(contentViewer,"Error in database");
 		}
+
+
+		//This portion is for creating the arrays with the watch history to display
+		
+		//This is for getting all of the titles (all time watch history)
+		for(int i = titleListNameSorted.size()-1; i >= 0; i--){
+			allTimeDates.add(dateListSorted.get(i));
+			allTimeTitles.add(titleListNameSorted.get(i));
+		}
+
+		//This is for getting 100 of the titles (recent watch history)
+		for(int i = titleListNameSorted.size()-1; i >= titleListNameSorted.size()-100; i--){	
+			pastHundredDates.add(dateListSorted.get(i));
+			pastHundredTitles.add(titleListNameSorted.get(i));
+		}
+
+		//This is for getting 10 of the titles (recent watch history)
+		for(int i = titleListNameSorted.size()-1; i >= titleListNameSorted.size()-10; i--){
+			pastTenDates.add(dateListSorted.get(i));
+			pastTenTitle.add(titleListNameSorted.get(i));
+		}
+
 	}
 	
 	private void askForHistoryLength() {
