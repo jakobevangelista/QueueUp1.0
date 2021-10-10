@@ -1,7 +1,11 @@
 import java.sql.*;
 import java.awt.event.*;
 import javax.swing.*;
+
+import org.w3c.dom.NameList;
+
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -12,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Enumeration;
 
 
 /*
@@ -32,6 +37,35 @@ public class Content_Analyst extends JFrame implements ActionListener {
     private static HashMap<String, Integer> second_time = new HashMap<>();
     private static HashMap<String, Integer> third_time = new HashMap<>();
     private static HashMap<String, Integer> fourth_time = new HashMap<>();
+    private static ArrayList<String> first_list = new ArrayList<String>(10);
+    private static ArrayList<String> second_list = new ArrayList<String>(10);
+    private static ArrayList<String> third_list = new ArrayList<String>(10);
+    private static ArrayList<String> fourth_list = new ArrayList<String>(10);
+    public static Statement stmt;
+    public static String nameList1 = "Top 10 Most watched Content Before 2001 \n";
+    public static String nameList2 = "Top 10 Most watched Content between 2001 and 2003 \n";
+    public static String nameList3 = "Top 10 Most watched Content between 2003 and 2005 \n";
+    public static String nameList4 = "Top 10 Most watched Content after 2005 \5";
+    
+    
+    public static String querying(ArrayList<String> list, Statement state, String result )
+    {
+      for(Object var: list)
+      {
+        try{
+        String statement = "SELECT originaltitle FROM Content where (titleid = \'" + var + "\' )";
+        ResultSet res = state.executeQuery(statement);
+        while(res.next())
+        {
+          result += res.getString("originalTitle")  + "\n" ;
+        }
+      } catch (Exception e){
+        JOptionPane.showMessageDialog(null,"Error accessing Database.");
+      }
+
+      }
+      return result;
+    }
 
     public static HashMap<String, Integer> sort_hash(HashMap<String, Integer> unsortedMap)
     {
@@ -44,7 +78,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
         public int compare(Map.Entry<String, Integer> o1,
                             Map.Entry<String, Integer> o2)
         {
-            return (o1.getValue()).compareTo(o2.getValue());
+            return -(o1.getValue()).compareTo(o2.getValue());
         }
       });
 
@@ -73,9 +107,9 @@ public class Content_Analyst extends JFrame implements ActionListener {
         int i = 0; 
         while(i < dates.size())
         {
-          LocalDate date1 = LocalDate.of(2004, 01, 01);
-          LocalDate date2 = LocalDate.of(2006, 01, 01);
-          LocalDate date3 = LocalDate.of(2008, 01, 01);
+          LocalDate date1 = LocalDate.of(2001, 01, 01);
+          LocalDate date2 = LocalDate.of(2003, 01, 01);
+          LocalDate date3 = LocalDate.of(2005, 01, 01);
           if(dates.get(i).compareTo(date1) < 0)
           {
             int value;
@@ -112,10 +146,6 @@ public class Content_Analyst extends JFrame implements ActionListener {
           }
           i++;
         }
-        System.out.println(first_time.get("8528522"));
-        System.out.println(second_time.get("8528522"));
-        System.out.println(third_time.get("8528522"));
-        System.out.println(fourth_time.get("8528522"));
     }
 
 
@@ -128,7 +158,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
         Class.forName("org.postgresql.Driver");
         conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
            "csce315903_14user", "GROUP14CS315");
-        Statement stmt = conn.createStatement();
+        stmt = conn.createStatement();
         String sqlstatment1 = "SELECT * FROM Users";
         String date_string = "";
         String title_string = "";
@@ -161,7 +191,70 @@ public class Content_Analyst extends JFrame implements ActionListener {
         hashing();
         
         HashMap<String, Integer> first_sorted = sort_hash(first_time);
-        System.out.println(first_sorted);
+        HashMap<String, Integer> second_sorted = sort_hash(second_time);
+        HashMap<String, Integer> third_sorted = sort_hash(third_time);
+        HashMap<String, Integer> fourth_sorted = sort_hash(fourth_time);
+
+        //counter 
+        int counter = 0;
+        
+        for(HashMap.Entry<String, Integer> set: first_sorted.entrySet())
+        {
+        
+          first_list.add(set.getKey());
+          counter++;
+          if(counter == 10)
+          {
+            break;
+          }
+        } 
+
+        counter = 0;
+        for(HashMap.Entry<String, Integer> set: second_sorted.entrySet())
+        {
+          // System.out.println(set.getKey() + " = " + set.getValue());
+          second_list.add(set.getKey());
+          counter++;
+          if(counter == 10)
+          {
+            break;
+          }
+        } 
+
+        counter = 0;
+
+        for(HashMap.Entry<String, Integer> set: third_sorted.entrySet())
+        {
+          // System.out.println(set.getKey() + " = " + set.getValue());
+          third_list.add(set.getKey());
+          counter++;
+          
+          if(counter == 10)
+          {
+            counter = 0;
+            break;
+          }
+        } 
+
+        counter = 0;
+        for(HashMap.Entry<String, Integer> set: fourth_sorted.entrySet())
+        {
+          fourth_list.add(set.getKey());
+          counter++;
+          if(counter == 10)
+          {
+            break;
+          }
+        } 
+       
+        //creating a new panel
+        nameList1 = querying(first_list, stmt, nameList1);
+        nameList2 = querying(second_list, stmt, nameList2);
+        nameList3 = querying(third_list, stmt, nameList3);
+        nameList4 = querying(fourth_list, stmt, nameList4);
+
+
+        
       } 
       catch (Exception e) 
       {
@@ -171,7 +264,55 @@ public class Content_Analyst extends JFrame implements ActionListener {
       }
       JOptionPane.showMessageDialog(null,"Opened database successfully");
       try{
-        
+          Content_Analyst s = new Content_Analyst();
+          JPanel container = new JPanel();
+          container.setLayout(new GridLayout(4, 1));
+          f = new JFrame("Content Analyst Viewer");
+
+          //creating the first panel
+          JPanel newPanel1 = new JPanel();
+          JButton btn = new JButton("<2001");
+          btn.addActionListener(s);
+          JTextArea txt1 = new JTextArea(nameList1);
+          newPanel1.add(txt1, BorderLayout.SOUTH);
+          newPanel1.add(btn);
+
+          //creating the second panel
+          JPanel newPanel2 = new JPanel();
+          JButton btn2 = new JButton(">= 2001 & <2003");
+          JTextArea txt2 = new JTextArea(nameList2);
+          btn2.addActionListener(s);
+          newPanel1.add(txt2, BorderLayout.SOUTH);
+          newPanel1.add(btn2);
+
+          // creating panel for third time frame
+          JPanel newPanel3 = new JPanel();
+          JButton btn3 = new JButton(">= 2003 & <2005");
+          JTextArea txt3 = new JTextArea(nameList3);
+          btn2.addActionListener(s);
+          newPanel3.add(txt3, BorderLayout.SOUTH);
+          newPanel3.add(btn3);
+
+          // creating panel for fourth time frame
+          JPanel newPanel4 = new JPanel();
+          JButton btn4 = new JButton(">= 2005");
+          JTextArea txt4 = new JTextArea(nameList4);
+          btn2.addActionListener(s);
+          newPanel3.add(txt4, BorderLayout.SOUTH);
+          newPanel3.add(btn4);
+
+          container.add(newPanel1);
+          container.add(newPanel2);
+          container.add(newPanel3);
+          container.add(newPanel4);
+
+          f.add(container);
+
+          f.setSize(1000, 1000);
+
+          f.setVisible(true);
+
+
         
 
       } catch (Exception e){
@@ -194,6 +335,10 @@ public class Content_Analyst extends JFrame implements ActionListener {
         String s = e.getActionCommand();
         if (s.equals("Close")) {
             f.dispose();
+        }
+        else if (s.equals("<2001"))
+        {
+           
         }
     }
 }
