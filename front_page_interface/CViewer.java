@@ -68,9 +68,9 @@ public class CViewer extends JFrame implements ActionListener{
 		allDates.setHorizontalAlignment(JLabel.CENTER);
 
 		
-		tenDates.setFont(new Font("Times New Roman", Font.PLAIN, 24));
-	    hundredDates.setFont(new Font("Times New Roman", Font.PLAIN, 24));
-		allDates.setFont(new Font("Times New Roman", Font.PLAIN, 24));
+		tenDates.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+	    hundredDates.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+		allDates.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 
 
 		
@@ -126,7 +126,7 @@ public class CViewer extends JFrame implements ActionListener{
 
 		JPanel container = new JPanel();
 		container.setSize(900,1000);
-		container.setLayout(new GridLayout(6,1));
+		container.setLayout(new GridLayout(3,2));
 
 		container.add(tenDates);
 		container.add(scrollPaneTen);

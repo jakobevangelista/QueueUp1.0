@@ -158,6 +158,7 @@ public class FrontPage extends JFrame implements ActionListener {
        
       } else if(s.equals("Content Analyst")){
         FrontGUI.dispose();
+        Content_Analyst newAnalyst =  new Content_Analyst();
 
       } else if(s.equals("List Users")){
         FrontPage newInterface = new FrontPage();
