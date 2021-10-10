@@ -1,0 +1,52 @@
+//   f = new JFrame("Content Analyist");
+
+      //  // create a object
+      //  Content_Analyst s = new Content_Analyst();
+ 
+      //  // CREATE A DROPDOWN
+      
+ 
+      // String name = "";
+      //   //create a statement object
+      //   Statement stmt = conn.createStatement();
+      //   //create an SQL statement
+      //   //TODO Step 2
+      //   String sqlStatement = "SELECT count(*) from users;";
+      //   //send statement to DBMS
+      //   ResultSet result = stmt.executeQuery(sqlStatement);
+      //   String count = ""; 
+      //   while (result.next()) {
+      //     count += result.getString("count");
+      //   }
+        
+      //   //casting string as integer
+      //   int count_int = Integer.parseInt(count);
+      //   System.out.println(count_int);
+
+      //   //creating array to store userid
+      //   String userArr[] = new String[count_int];
+      //   // SQL statement for getting all the userId
+      //   String sqlUserStatement = "SELECT userId FROM users; ";
+      //   result = stmt.executeQuery(sqlUserStatement);
+      //   int i = 0;
+      //   while (result.next()) {
+      //     userArr[i] = result.getString("userid");
+      //     i++;
+      //   }
+      //   JPanel p1 = new JPanel();
+      //   JComboBox<String> box = new JComboBox<String>(userArr);
+      //   JButton btn = new JButton("Select User");
+        
+      //   JButton b = new JButton("Close");
+
+      //   // add actionlistener to button
+      //   b.addActionListener(s);
+      //   p1.add(box);
+      //   p1.add(btn);
+      //   p1.add(b);
+      //   // btn.addActionListener(box);
+      //   f.add(p1);
+
+      //   f.setSize(800, 800);
+
+      //   f.setVisible(true);
