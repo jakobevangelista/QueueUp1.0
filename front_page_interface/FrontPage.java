@@ -4,6 +4,10 @@ import java.awt.event.*;
 import javax.swing.*;
 import java.awt.*;
 import javax.swing.border.Border;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 
 public class FrontPage extends JFrame implements ActionListener {
@@ -13,6 +17,8 @@ public class FrontPage extends JFrame implements ActionListener {
 
   //String which is going to hold the entered user Id
   String userId = "";
+  static private ArrayList<String> userList =  new ArrayList<>();
+
 
   public void StartPage(){
     //Setting up intial interface and calling the class
@@ -23,11 +29,13 @@ public class FrontPage extends JFrame implements ActionListener {
     //Intializing the components which will be shown on the interface
     JButton trendButton = new JButton("Content Analyst");
     JButton viewButton = new JButton("Content Viewer");
+    JButton showUsers = new JButton("List Users");
     JLabel titleLabel = new JLabel("Choose your " + "\n" + "viewing experience");
 
     //Adding action/event listeners to the buttons
     viewButton.addActionListener(newInterface);
     trendButton.addActionListener(newInterface);
+    showUsers.addActionListener(newInterface);
 
     //Creating a panel which will hold the title header
     JPanel headerPanel = new JPanel(){
@@ -54,16 +62,19 @@ public class FrontPage extends JFrame implements ActionListener {
     };
     mainPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 30, 0));
     
-    viewButton.setPreferredSize(new Dimension(250,50));
-    trendButton.setPreferredSize(new Dimension(250,50));
-    trendButton.setFont(new Font("Serif", Font.PLAIN, 30));
-    viewButton.setFont(new Font("Serif", Font.PLAIN, 30));
+    viewButton.setPreferredSize(new Dimension(200,50));
+    trendButton.setPreferredSize(new Dimension(200,50));
+    showUsers.setPreferredSize(new Dimension(200,50));
+    trendButton.setFont(new Font("Serif", Font.PLAIN, 25));
+    viewButton.setFont(new Font("Serif", Font.PLAIN, 25));
+    showUsers.setFont(new Font("Serif", Font.PLAIN, 25));
     trendButton.setFocusable(false);
     viewButton.setFocusable(false);
+    showUsers.setFocusable(false);
 
-    
     mainPanel.add(viewButton);
     mainPanel.add(trendButton);
+    mainPanel.add(showUsers);
 
   
     //Setting up layouts and making the frame visible and adding components
@@ -76,7 +87,7 @@ public class FrontPage extends JFrame implements ActionListener {
 
 
 
-  public boolean callDatabase(String userNum){
+  public boolean callDatabase(String userNum, int value){
     //This portion is for connecting to the database
     Connection conn = null;
     boolean toReturn = false;
@@ -95,12 +106,22 @@ public class FrontPage extends JFrame implements ActionListener {
     //This portion is for grabbing all the users from the database
     try{
       Statement stmt = conn.createStatement();
-      String sqlStatement = "SELECT userId FROM users WHERE userId=" + userNum +";";
+      String sqlStatement = "";
+      if(value == 0){
+        sqlStatement = "SELECT userId FROM users WHERE userId=" + userNum +";";
+      } else if (value == 1){
+        sqlStatement = "SELECT userId FROM users LIMIT 10";
+      }
       ResultSet result = stmt.executeQuery(sqlStatement);
       while (result.next()) {
-        if(result.getString("userId").equals(userNum)){
-          toReturn = true;
-        }
+        if(value == 0){
+          if(result.getString("userId").equals(userNum)){
+            toReturn = true;
+          }
+        } else if (value == 1){
+          userList.add(result.getString("userId"));
+        } 
+        
       }
     } catch (Exception e){
       JOptionPane.showMessageDialog(FrontGUI,e);
@@ -124,7 +145,7 @@ public class FrontPage extends JFrame implements ActionListener {
         if(userId.isEmpty()){
           JOptionPane.showMessageDialog(FrontGUI, "User ID required");
         } else {
-          boolean toCheck = newInterface.callDatabase(userId);
+          boolean toCheck = newInterface.callDatabase(userId, 0);
           if(toCheck){
             JOptionPane.showMessageDialog(FrontGUI,"Success, Opening Account");
             FrontGUI.dispose();
@@ -138,7 +159,13 @@ public class FrontPage extends JFrame implements ActionListener {
       } else if(s.equals("Content Analyst")){
         FrontGUI.dispose();
 
-      } 
+      } else if(s.equals("List Users")){
+        FrontPage newInterface = new FrontPage();
+        newInterface.callDatabase(null, 1);
+        JOptionPane.showMessageDialog(FrontGUI, userList);
+
+
+      }
   }
 
   //This is the main function which runs all the code

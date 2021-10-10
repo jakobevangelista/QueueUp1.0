@@ -62,9 +62,15 @@ public class CViewer extends JFrame implements ActionListener{
 		JLabel tenDates = new JLabel("Watch History: " + ConvertDate(pastTenDates.get(0)) + " - " + ConvertDate(pastTenDates.get(pastTenDates.size()-1)));
 		JLabel hundredDates = new JLabel("Watch History: " + ConvertDate(pastHundredDates.get(0)) + " - " + ConvertDate(pastHundredDates.get(pastHundredDates.size()-1)));
 		JLabel allDates = new JLabel("Watch History: " + ConvertDate(allTimeDates.get(0)) + " - " + ConvertDate(allTimeDates.get(allTimeDates.size()-1)));
-	    tenDates.setFont(new Font("Times New Roman", Font.PLAIN, 20));
-	    hundredDates.setFont(new Font("Times New Roman", Font.PLAIN, 20));
-		allDates.setFont(new Font("Times New Roman", Font.PLAIN, 20));
+	    
+		tenDates.setHorizontalAlignment(JLabel.CENTER);
+		hundredDates.setHorizontalAlignment(JLabel.CENTER);
+		allDates.setHorizontalAlignment(JLabel.CENTER);
+
+		
+		tenDates.setFont(new Font("Times New Roman", Font.PLAIN, 24));
+	    hundredDates.setFont(new Font("Times New Roman", Font.PLAIN, 24));
+		allDates.setFont(new Font("Times New Roman", Font.PLAIN, 24));
 
 
 		
@@ -78,6 +84,10 @@ public class CViewer extends JFrame implements ActionListener{
 			dlmTen.addElement(word);
 		}
 		listTen.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+		DefaultListCellRenderer rendererTen =  (DefaultListCellRenderer)listTen.getCellRenderer();  
+		rendererTen.setHorizontalAlignment(JLabel.CENTER);  
+
+
 
 		//Adding all the elements from 100 recent dates to the JFrame
 		DefaultListModel dlmHun = new DefaultListModel();
@@ -88,6 +98,10 @@ public class CViewer extends JFrame implements ActionListener{
 			dlmHun.addElement(word);
 		}
 		listHun.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+		DefaultListCellRenderer rendererHun =  (DefaultListCellRenderer)listHun.getCellRenderer();  
+		rendererHun.setHorizontalAlignment(JLabel.CENTER);  
+
+
 
 
 		//Adding all the elements from all time recent titless
@@ -99,22 +113,34 @@ public class CViewer extends JFrame implements ActionListener{
 			dlmAll.addElement(word);
 		}
 		listAll.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+		DefaultListCellRenderer rendererAll =  (DefaultListCellRenderer)listAll.getCellRenderer();  
+		rendererAll.setHorizontalAlignment(JLabel.CENTER);  
+
+
 
 
 
 
 		
 		//Adding the components to the JFrame
-		contentViewer.add(tenDates);
-		contentViewer.add(scrollPaneTen);
-		contentViewer.add(hundredDates);
-		contentViewer.add(scrollPaneHun);
-		contentViewer.add(allDates);
-		contentViewer.add(scrollPaneAll);
+
+		JPanel container = new JPanel();
+		container.setSize(900,1000);
+		container.setLayout(new GridLayout(6,1));
+
+		container.add(tenDates);
+		container.add(scrollPaneTen);
+		container.add(hundredDates);
+		container.add(scrollPaneHun);
+		container.add(allDates);
+		container.add(scrollPaneAll);
+		JScrollPane scrPane = new JScrollPane(container);
+		
 		
 
 		//Setting up the layout and important information
-		contentViewer.setLayout(new GridLayout(3,2, 40, 20));
+		contentViewer.add(scrPane);
+		contentViewer.add(container);
 		contentViewer.setSize(900,1000);
         contentViewer.show();
 
