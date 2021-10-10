@@ -37,9 +37,9 @@ public class CViewer extends JFrame implements ActionListener{
 	public CViewer(int uid) {
 		userId = uid;
 		if(!fetchWatchHistory(uid)) {
-			System.exit(-1);
+		 	System.exit(-1);
 		}
-		// Assert that the lists are equal sizes and not 0. You must use the argument -ea during execution in order for this to do anything.
+		//Assert that the lists are equal sizes and not 0. You must use the argument -ea during execution in order for this to do anything.
 		assert ratingList.size() == dateList.size() && dateList.size() == titleList.size() && titleList.size() != 0: "Invalid list sizes.";
 		sortByDate();
 		askForHistoryLength();
@@ -58,11 +58,15 @@ public class CViewer extends JFrame implements ActionListener{
         contentViewer = new JFrame("Content Viewing Experience");
 
 		//Creating some components which will be used within the interface
-
 		JLabel tenDates = new JLabel("Watch History: " + ConvertDate(pastTenDates.get(0)) + " - " + ConvertDate(pastTenDates.get(pastTenDates.size()-1)));
 		JLabel hundredDates = new JLabel("Watch History: " + ConvertDate(pastHundredDates.get(0)) + " - " + ConvertDate(pastHundredDates.get(pastHundredDates.size()-1)));
 		JLabel allDates = new JLabel("Watch History: " + ConvertDate(allTimeDates.get(0)) + " - " + ConvertDate(allTimeDates.get(allTimeDates.size()-1)));
 	    
+		JTabbedPane tp = new JTabbedPane();
+		JPanel watchHistory = new JPanel();
+		JPanel recommendation = new JPanel();
+		JPanel movieList = new JPanel();
+
 		tenDates.setHorizontalAlignment(JLabel.CENTER);
 		hundredDates.setHorizontalAlignment(JLabel.CENTER);
 		allDates.setHorizontalAlignment(JLabel.CENTER);
@@ -101,9 +105,6 @@ public class CViewer extends JFrame implements ActionListener{
 		DefaultListCellRenderer rendererHun =  (DefaultListCellRenderer)listHun.getCellRenderer();  
 		rendererHun.setHorizontalAlignment(JLabel.CENTER);  
 
-
-
-
 		//Adding all the elements from all time recent titless
 		DefaultListModel dlmAll = new DefaultListModel();
 		JList listAll = new JList(dlmAll);
@@ -115,32 +116,26 @@ public class CViewer extends JFrame implements ActionListener{
 		listAll.setFont(new Font("Times New Roman", Font.PLAIN, 15));
 		DefaultListCellRenderer rendererAll =  (DefaultListCellRenderer)listAll.getCellRenderer();  
 		rendererAll.setHorizontalAlignment(JLabel.CENTER);  
-
-
-
-
-
-
 		
 		//Adding the components to the JFrame
+		tp.add("Watch History", watchHistory);
+		tp.add("Recommendations", recommendation);
+		tp.add("Movie List",movieList);
+		tp.setSize(850,950);
 
-		JPanel container = new JPanel();
-		container.setSize(900,1000);
-		container.setLayout(new GridLayout(3,2));
+		watchHistory.setSize(900,1000);
+		recommendation.setSize(900,1000);
+		watchHistory.setSize(900,1000);
 
-		container.add(tenDates);
-		container.add(scrollPaneTen);
-		container.add(hundredDates);
-		container.add(scrollPaneHun);
-		container.add(allDates);
-		container.add(scrollPaneAll);
-		JScrollPane scrPane = new JScrollPane(container);
-		
-		
+		watchHistory.setLayout(new GridLayout(3,2));
+		watchHistory.add(tenDates);
+		watchHistory.add(scrollPaneTen);
+		watchHistory.add(hundredDates);
+		watchHistory.add(scrollPaneHun);
+		watchHistory.add(allDates);
+		watchHistory.add(scrollPaneAll);
 
-		//Setting up the layout and important information
-		contentViewer.add(scrPane);
-		contentViewer.add(container);
+		contentViewer.add(tp);
 		contentViewer.setSize(900,1000);
         contentViewer.show();
 

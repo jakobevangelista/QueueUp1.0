@@ -25,7 +25,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
     static JFrame contentAnalyst;
     private static ArrayList<LocalDate> dates;
     private static ArrayList<String> ratingList;
-	private static ArrayList<String> dateList;
+	  private static ArrayList<String> dateList;
     private static ArrayList<String> titleList;
     private static HashMap<String, Integer> first_time = new HashMap<>();
     private static HashMap<String, Integer> second_time = new HashMap<>();
@@ -180,8 +180,8 @@ public class Content_Analyst extends JFrame implements ActionListener {
         labelList4.setHorizontalAlignment(JLabel.CENTER);
         labelList4.setVerticalAlignment(JLabel.CENTER);
         labelList1.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-		labelList2.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-		labelList3.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+        labelList2.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+        labelList3.setFont(new Font("Times New Roman", Font.PLAIN, 15));
         labelList4.setFont(new Font("Times New Roman", Font.PLAIN, 15));
 
 
@@ -191,28 +191,41 @@ public class Content_Analyst extends JFrame implements ActionListener {
         JTextArea list3 = new JTextArea(nameList3);
         JTextArea list4 = new JTextArea(nameList4);
         JScrollPane scrollPane1 = new JScrollPane(list1);
-		JScrollPane scrollPane2 = new JScrollPane(list2);
-		JScrollPane scrollPane3 = new JScrollPane(list3);
-		JScrollPane scrollPane4 = new JScrollPane(list4);
+        JScrollPane scrollPane2 = new JScrollPane(list2);
+        JScrollPane scrollPane3 = new JScrollPane(list3);
+        JScrollPane scrollPane4 = new JScrollPane(list4);
         
+        JTabbedPane tp = new JTabbedPane();
+        JPanel top10 = new JPanel();
+        JPanel genreList = new JPanel();
+        JPanel ratingList = new JPanel();
+
+        tp.add("Top 10 Watched", top10);
+        tp.add("Top 10 Genres", genreList);
+        tp.add("Top 10 Rating", ratingList);
+
+        top10.setSize(900,1000);
+        genreList.setSize(900,1000);
+        ratingList.setSize(900,1000);
        
 
 
         //Setting up the view for the JFrame
-        contentAnalyst.add(labelList1);
-        contentAnalyst.add(scrollPane1);
+        top10.add(labelList1);
+        top10.add(scrollPane1);
 
-        contentAnalyst.add(labelList2);
-        contentAnalyst.add(scrollPane2);
+        top10.add(labelList2);
+        top10.add(scrollPane2);
 
-        contentAnalyst.add(labelList3);
-        contentAnalyst.add(scrollPane3);
+        top10.add(labelList3);
+        top10.add(scrollPane3);
 
-        contentAnalyst.add(labelList4);
-        contentAnalyst.add(scrollPane4);
+        top10.add(labelList4);
+        top10.add(scrollPane4);
 
         contentAnalyst.setSize(900,1000);
-        contentAnalyst.setLayout(new GridLayout(4,2));
+        contentAnalyst.add(tp);
+        top10.setLayout(new GridLayout(4,2));
         contentAnalyst.show();
    
     }
