@@ -32,6 +32,8 @@ public class CViewer extends JFrame implements ActionListener{
 	static private ArrayList<String> pastHundredTitles =  new ArrayList<String>();
 	static private ArrayList<LocalDate> allTimeDates =  new ArrayList<LocalDate>();
 	static private ArrayList<String> allTimeTitles=  new ArrayList<String>();
+	static private ArrayList<String> sliderArray = new ArrayList<String>();
+	static private ArrayList<String> sliderReverseArray = new ArrayList<String>();
 
 	
 	public CViewer(int uid) {
@@ -48,14 +50,67 @@ public class CViewer extends JFrame implements ActionListener{
 
 	}
 
-
 	public static String ConvertDate(LocalDate LocalDate){
 		return LocalDate.format(DateTimeFormatter.ofPattern("LLLL dd yyyy"));
 	}
 
+	static JSlider newSlider;
+	static JLabel newLabel = new JLabel();
+	static DefaultListModel dlmSlider = new DefaultListModel();
+	static JList newList = new JList(dlmSlider);
+	static JScrollPane scrollSlider = new JScrollPane(newList);
+
+
+	static public void sliderChanged(){
+		int value = newSlider.getValue();
+		if(value == allTimeTitles.size()){
+			value = value-1;
+		}
+		sliderArray.clear();
+		sliderReverseArray.clear();
+		//Adding values to the array
+		for(int i = value; i >= 0; i--){
+			sliderArray.add(allTimeTitles.get(i));
+		}
+
+		//Reversing the array
+		for(int i = sliderArray.size()-1; i >=0; i--){
+			sliderReverseArray.add(sliderArray.get(i));
+		}
+
+		dlmSlider.removeAllElements();
+		for(String word : sliderReverseArray){
+			dlmSlider.addElement(word);
+		}
+		newList.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+		DefaultListCellRenderer rendererSlider =  (DefaultListCellRenderer)newList.getCellRenderer();  
+		rendererSlider.setHorizontalAlignment(JLabel.CENTER);  
+
+		String firstValue = ConvertDate(allTimeDates.get(0));
+		String secondValue = ConvertDate(allTimeDates.get(sliderReverseArray.size()-1));
+		newLabel.setText(firstValue + " - " + secondValue);
+		newLabel.setFont((new Font("Times New Roman", Font.PLAIN, 16)));
+		newLabel.setHorizontalAlignment(JLabel.CENTER);
+		newLabel.setVerticalAlignment(JLabel.CENTER);
+
+	}
+
+
     static public void createGUI(){
 		//Setting up JFrame and pertint information
         contentViewer = new JFrame("Content Viewing Experience");
+
+		//Creating the slider
+		newSlider = new JSlider(0, allTimeDates.size());
+		newSlider.setMajorTickSpacing(10);
+		newSlider.setMinorTickSpacing(1);
+		newSlider.setPaintTicks(true);
+		newSlider.addChangeListener(e -> sliderChanged());
+
+		
+
+		
+
 
 		//Creating some components which will be used within the interface
 		JLabel tenDates = new JLabel("Watch History: " + ConvertDate(pastTenDates.get(0)) + " - " + ConvertDate(pastTenDates.get(pastTenDates.size()-1)));
@@ -127,13 +182,20 @@ public class CViewer extends JFrame implements ActionListener{
 		recommendation.setSize(900,1000);
 		watchHistory.setSize(900,1000);
 
-		watchHistory.setLayout(new GridLayout(3,2));
+
+		watchHistory.setLayout(new GridLayout(4,2));
 		watchHistory.add(tenDates);
 		watchHistory.add(scrollPaneTen);
 		watchHistory.add(hundredDates);
 		watchHistory.add(scrollPaneHun);
 		watchHistory.add(allDates);
 		watchHistory.add(scrollPaneAll);
+		JPanel newPanel = new JPanel();
+		newPanel.setLayout(new GridLayout(2,1));
+		watchHistory.add(newPanel);
+		newPanel.add(newLabel);
+		newPanel.add(newSlider);
+		watchHistory.add(scrollSlider);
 
 		contentViewer.add(tp);
 		contentViewer.setSize(900,1000);
