@@ -14,12 +14,12 @@ import java.time.format.DateTimeFormatter;
 
 
 public class CViewer extends JFrame implements ActionListener{
-	private int userId;
+	static private int userId;
 	static JFrame contentViewer;
 	// unsorted instances of ratings, dates, and titles
-	private ArrayList<String> ratingList;
-	private ArrayList<String> dateList;
-	private ArrayList<String> titleList;
+	static private ArrayList<String> ratingList;
+	static private ArrayList<String> dateList;
+	static private ArrayList<String> titleList;
 	// sorted instances of ratings, dates, and titles
 	static private ArrayList<LocalDate> dateListSorted;
 	static private ArrayList<Integer> titleListSorted;
@@ -46,8 +46,75 @@ public class CViewer extends JFrame implements ActionListener{
 		sortByDate();
 		askForHistoryLength();
 		callDatabase();
+		viewerBeware();
 		createGUI();
 
+	}
+
+
+	static private ArrayList<Integer> worstRatings = new ArrayList<Integer>();
+	static private ArrayList<String> worstMovies = new ArrayList<String>();
+	static private ArrayList<String> allUserRatings;
+	static private ArrayList<String> allUserMovies;
+	static private ArrayList<String> allUserNames;
+	static public void viewerBeware(){
+		for(int i = 0; i < ratingList.size(); i++){
+			if(ratingList.get(i).equals("1")){ //Grabbing the absolute worst ratings for a user
+				worstRatings.add(i); //Putting the index within the array 
+			}
+		}
+
+		//Works at grabbing the worst rated movies for a given user
+		for(int j = 0; j < worstRatings.size(); j++){
+			worstMovies.add(titleList.get(worstRatings.get(j))); //Getting the movie at the index of the worst movie
+		}
+
+		//Now we need to grab all users from the database
+		Connection conn = null;
+		try {
+			//open a connection
+	        Class.forName("org.postgresql.Driver");
+	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+	           "csce315903_14user", "GROUP14CS315");
+	        Statement stmt = conn.createStatement();
+	        // create sql statements to get info we need
+	        String sqlStatement1 = "SELECT rating FROM users WHERE userId != " + userId + ";";
+			String sqlStatement2 = "SELECT userId FROM users WHERE userId != " + userId + ";";
+	        String sqlStatement3 = "SELECT titleId FROM users WHERE userId != " + userId + ";";
+	        // execute each statement and store info in string
+	        ResultSet rating_result = stmt.executeQuery(sqlStatement1);
+	        String rating_string = "";
+	        while (rating_result.next()) {
+	        	rating_string += rating_result.getString("rating");
+	        }
+	        ResultSet title_result = stmt.executeQuery(sqlStatement3);
+	        String title_string = "";
+	        while (title_result.next()) {
+	        	title_string += title_result.getString("titleId");
+	        }
+			ResultSet name_result = stmt.executeQuery(sqlStatement2);
+	        String name_string = "";
+	        while (name_result.next()) {
+	        	name_string += name_result.getString("userId");
+				name_string += "T";
+	        }
+	        // remove { and } from string then convert string to java.util.ArrayList
+	        rating_string = rating_string.replace("{", "").replace("}", "");
+	        title_string = title_string.replace("{", "").replace("}", "");
+			name_string = name_string.replace("{", "").replace("}", "");
+	        // convert list to array list and store it as private variable
+			allUserNames = new ArrayList<String>(Arrays.asList(name_string.split("T")));
+	        allUserRatings = new ArrayList<String>(Arrays.asList(rating_string.split(",")));
+	        allUserMovies = new ArrayList<String>(Arrays.asList(title_string.split(",")));
+	        conn.close();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        System.err.println(e.getClass().getName()+": "+e.getMessage());
+	    }
+		//Successfully grabbed names, rating, and movies with perfection
+		
+		
+	
 	}
 
 	public static String ConvertDate(LocalDate LocalDate){
@@ -55,7 +122,7 @@ public class CViewer extends JFrame implements ActionListener{
 	}
 
 	static JSlider newSlider;
-	static JLabel newLabel = new JLabel();
+	static JLabel newLabel = new JLabel("Slide For Watch History");
 	static DefaultListModel dlmSlider = new DefaultListModel();
 	static JList newList = new JList(dlmSlider);
 	static JScrollPane scrollSlider = new JScrollPane(newList);
