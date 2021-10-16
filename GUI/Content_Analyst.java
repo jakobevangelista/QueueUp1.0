@@ -45,7 +45,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
     public static String nameList1 = "Top 10 Most watched Content Before 2001 \n";
     public static String nameList2 = "Top 10 Most watched Content between 2001 and 2003 \n";
     public static String nameList3 = "Top 10 Most watched Content between 2003 and 2005 \n";
-    public static String nameList4 = "Top 10 Most watched Content after 2005 \5";
+    public static String nameList4 = "Top 10 Most watched Content after 2005 \n";
     
     
     public static String querying(ArrayList<String> list, Statement state, String result )
@@ -252,9 +252,6 @@ public class Content_Analyst extends JFrame implements ActionListener {
         nameList2 = querying(second_list, stmt, nameList2);
         nameList3 = querying(third_list, stmt, nameList3);
         nameList4 = querying(fourth_list, stmt, nameList4);
-
-
-        
       } 
       catch (Exception e) 
       {
@@ -275,7 +272,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
           btn.addActionListener(s);
           JTextArea txt1 = new JTextArea(nameList1);
           newPanel1.add(txt1, BorderLayout.SOUTH);
-          newPanel1.add(btn);
+          // newPanel1.add(btn);
 
           //creating the second panel
           JPanel newPanel2 = new JPanel();
@@ -283,7 +280,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
           JTextArea txt2 = new JTextArea(nameList2);
           btn2.addActionListener(s);
           newPanel1.add(txt2, BorderLayout.SOUTH);
-          newPanel1.add(btn2);
+          
 
           // creating panel for third time frame
           JPanel newPanel3 = new JPanel();
@@ -291,7 +288,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
           JTextArea txt3 = new JTextArea(nameList3);
           btn2.addActionListener(s);
           newPanel3.add(txt3, BorderLayout.SOUTH);
-          newPanel3.add(btn3);
+      
 
           // creating panel for fourth time frame
           JPanel newPanel4 = new JPanel();
@@ -299,7 +296,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
           JTextArea txt4 = new JTextArea(nameList4);
           btn2.addActionListener(s);
           newPanel3.add(txt4, BorderLayout.SOUTH);
-          newPanel3.add(btn4);
+         
 
           container.add(newPanel1);
           container.add(newPanel2);
