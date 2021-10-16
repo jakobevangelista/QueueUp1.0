@@ -45,8 +45,11 @@ public class CViewer extends JFrame implements ActionListener{
 		assert ratingList.size() == dateList.size() && dateList.size() == titleList.size() && titleList.size() != 0: "Invalid list sizes.";
 		sortByDate();
 		askForHistoryLength();
+		JOptionPane.showMessageDialog(null, "Developing Viewer History...");
 		callDatabase();
+		JOptionPane.showMessageDialog(null, "Developing Viewer Beware...");
 		viewerBeware();
+		JOptionPane.showMessageDialog(null, "Done");
 		createGUI();
 
 	}
@@ -54,12 +57,12 @@ public class CViewer extends JFrame implements ActionListener{
 
 	static private ArrayList<Integer> worstRatings = new ArrayList<Integer>();
 	static private ArrayList<String> worstMovies = new ArrayList<String>();
-	static private ArrayList<String> allUserRatings;
-	static private ArrayList<String> allUserMovies;
-	static private ArrayList<String> allUserNames;
+	static private ArrayList<Integer> countWorst = new ArrayList<Integer>();
+	static private ArrayList<String> overlappingWorstTitles = new ArrayList<String>();
+	static private ArrayList<String> viewerBewareArr;
 	static public void viewerBeware(){
 		for(int i = 0; i < ratingList.size(); i++){
-			if(ratingList.get(i).equals("1")){ //Grabbing the absolute worst ratings for a user
+			if(ratingList.get(i).equals("1") | ratingList.get(i).equals("2")){ //Grabbing the absolute worst ratings for a user
 				worstRatings.add(i); //Putting the index within the array 
 			}
 		}
@@ -68,50 +71,151 @@ public class CViewer extends JFrame implements ActionListener{
 		for(int j = 0; j < worstRatings.size(); j++){
 			worstMovies.add(titleList.get(worstRatings.get(j))); //Getting the movie at the index of the worst movie
 		}
+		System.out.println(worstMovies);
+
 
 		//Now we need to grab all users from the database
 		Connection conn = null;
 		try {
-			//open a connection
 	        Class.forName("org.postgresql.Driver");
 	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
 	           "csce315903_14user", "GROUP14CS315");
 	        Statement stmt = conn.createStatement();
-	        // create sql statements to get info we need
-	        String sqlStatement1 = "SELECT rating FROM users WHERE userId != " + userId + ";";
-			String sqlStatement2 = "SELECT userId FROM users WHERE userId != " + userId + ";";
-	        String sqlStatement3 = "SELECT titleId FROM users WHERE userId != " + userId + ";";
-	        // execute each statement and store info in string
-	        ResultSet rating_result = stmt.executeQuery(sqlStatement1);
-	        String rating_string = "";
-	        while (rating_result.next()) {
-	        	rating_string += rating_result.getString("rating");
-	        }
-	        ResultSet title_result = stmt.executeQuery(sqlStatement3);
-	        String title_string = "";
-	        while (title_result.next()) {
-	        	title_string += title_result.getString("titleId");
-	        }
-			ResultSet name_result = stmt.executeQuery(sqlStatement2);
+			String sqlStatement = "SELECT userId FROM users WHERE userId != " + userId + ";";
+			ResultSet name_result = stmt.executeQuery(sqlStatement);
 	        String name_string = "";
 	        while (name_result.next()) {
 	        	name_string += name_result.getString("userId");
 				name_string += "T";
 	        }
-	        // remove { and } from string then convert string to java.util.ArrayList
-	        rating_string = rating_string.replace("{", "").replace("}", "");
-	        title_string = title_string.replace("{", "").replace("}", "");
 			name_string = name_string.replace("{", "").replace("}", "");
+			ArrayList<String> allUserNames = new ArrayList<String>(Arrays.asList(name_string.split("T")));
+
+			//At this point I have collected all the worst tiles and all the users, need to loop for each user and get their worst ratings
+			for(int i = 0; i < allUserNames.size(); i++){
+				String sqlStatement1 = "SELECT rating FROM users WHERE userId = " + allUserNames.get(i) + ";";
+				String sqlStatement2 = "SELECT titleId FROM users WHERE userId = " +  allUserNames.get(i) + ";";
+				
+				//Grabbing ratings for the user in question
+				ResultSet rating_result = stmt.executeQuery(sqlStatement1);
+				String rating_string = "";
+				while (rating_result.next()) {
+					rating_string += rating_result.getString("rating");
+				}
+
+				//Grabbing movie number for user in question
+				ResultSet title_result = stmt.executeQuery(sqlStatement2);
+				String title_string = "";
+				while (title_result.next()) {
+					title_string += title_result.getString("titleId");
+				}
+
+				//Converting all the strings to an array which we can parse through
+				rating_string = rating_string.replace("{", "").replace("}", "");
+				title_string = title_string.replace("{", "").replace("}", "");
+				ArrayList<String> ratingListQuestion = new ArrayList<String>(Arrays.asList(rating_string.split(",")));
+				ArrayList<String> titleListQuestion = new ArrayList<String>(Arrays.asList(title_string.split(",")));
+
+				//Grabbing the worst ratings for a user in question
+				ArrayList<Integer> worstRatingsQuestion = new ArrayList<Integer>();
+				for(int k = 0; k < ratingListQuestion.size(); k++){
+					if(ratingListQuestion.get(k).equals("1") | ratingListQuestion.get(k).equals("2")){ 
+						worstRatingsQuestion.add(k); 
+					}
+				}
+
+				
+				//Putting the worst raings movie id into a new array
+				ArrayList<String> worstMoviesQuestion = new ArrayList<String>();
+				for(int j = 0; j < worstRatingsQuestion.size(); j++){
+					worstMoviesQuestion.add(titleListQuestion.get(worstRatingsQuestion.get(j))); 
+				}
+
+
+				//Counting the number of same worst movies for user logged in to the user in question
+				int count = 0;
+				for(int k = 0; k < worstMovies.size(); k++){
+					if(worstMoviesQuestion.contains(worstMovies.get(k))){
+						count += 1;
+					}
+				}
+				countWorst.add(count);
+			}
+			System.out.println(countWorst);
+
+			//Now we have an array with all the counts for all the users in the database, find the max index
+			int max = countWorst.get(0);
+			int indexMax = 0;
+			for(int num = 1; num < countWorst.size(); num++){
+				if(countWorst.get(num) > max){
+					max = countWorst.get(num);
+					indexMax = num;
+				}
+			}
+
+
+			//Found the best index, now get the user
+			String userMax = allUserNames.get(indexMax);
+			
+			//Call the database again 
+			Class.forName("org.postgresql.Driver");
+	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db", "csce315903_14user", "GROUP14CS315");
+	        Statement stmt3 = conn.createStatement();
+			String sqlStatement4 = "SELECT titleId FROM users WHERE userId = " + userMax + ";";
+			String sqlStatement6 = "SELECT rating FROM users WHERE userId = " + userMax + ";";
+			ResultSet titleB_result = stmt.executeQuery(sqlStatement4);
+	        String titleB_string = "";
+	        while (titleB_result.next()) {
+	        	titleB_string += titleB_result.getString("titleId");
+	        }
+			titleB_string = titleB_string.replace("{", "").replace("}", "");
+
+			ResultSet resultB_result = stmt.executeQuery(sqlStatement6);
+	        String resultB_string = "";
+	        while (resultB_result.next()) {
+	        	resultB_string += resultB_result.getString("rating");
+	        }
+			resultB_string = resultB_string.replace("{", "").replace("}", "");
+
+			ArrayList<String> overlapUserTitles = new ArrayList<String>(Arrays.asList(titleB_string.split(",")));
+			ArrayList<String> overlapUserRating = new ArrayList<String>(Arrays.asList(resultB_string.split(",")));
+			ArrayList<String> overlapUserTitlesFull = new ArrayList<String>();
+
+			for(int o = 0; o < overlapUserRating.size(); o++){
+				if(overlapUserRating.get(o).equals("1") | overlapUserRating.get(o).equals("2")){
+					overlapUserTitlesFull.add(overlapUserTitles.get(o));
+				}
+			}
+
+			//Now we have all the number 1 ratings for the user with the most overallaping dislikes
+			for(int l = 0; l < overlapUserTitlesFull.size(); l++){
+				if(!worstMovies.contains(overlapUserTitlesFull.get(l))){
+					overlappingWorstTitles.add(overlapUserTitlesFull.get(l));
+				}
+			}
+
+			//Now we have all the titles ids which our user has not seen, call the database to get the name
+			Class.forName("org.postgresql.Driver");
+	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db", "csce315903_14user", "GROUP14CS315");
+	        Statement stmt2 = conn.createStatement();
+			String titleN_string = "";
+			for(int value = 0; value < overlappingWorstTitles.size(); value++){
+				String sqlStatement5 = "SELECT originalTitle FROM content WHERE titleId = " + overlappingWorstTitles.get(value)+ ";";
+				ResultSet titleN_result = stmt.executeQuery(sqlStatement5);
+				while (titleN_result.next()) {
+					titleN_string += titleN_result.getString("originalTitle");
+					titleN_string += "~";
+				}
+			}
+			titleN_string = titleN_string.replace("{", "").replace("}", "");
+			viewerBewareArr = new ArrayList<String>(Arrays.asList(titleN_string.split("~")));
+	     
 	        // convert list to array list and store it as private variable
-			allUserNames = new ArrayList<String>(Arrays.asList(name_string.split("T")));
-	        allUserRatings = new ArrayList<String>(Arrays.asList(rating_string.split(",")));
-	        allUserMovies = new ArrayList<String>(Arrays.asList(title_string.split(",")));
 	        conn.close();
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	        System.err.println(e.getClass().getName()+": "+e.getMessage());
 	    }
-		//Successfully grabbed names, rating, and movies with perfection
 		
 		
 	
@@ -186,7 +290,7 @@ public class CViewer extends JFrame implements ActionListener{
 	    
 		JTabbedPane tp = new JTabbedPane();
 		JPanel watchHistory = new JPanel();
-		JPanel recommendation = new JPanel();
+		JPanel viewerBewarePanel = new JPanel();
 		JPanel movieList = new JPanel();
 
 		tenDates.setHorizontalAlignment(JLabel.CENTER);
@@ -238,18 +342,33 @@ public class CViewer extends JFrame implements ActionListener{
 		listAll.setFont(new Font("Times New Roman", Font.PLAIN, 15));
 		DefaultListCellRenderer rendererAll =  (DefaultListCellRenderer)listAll.getCellRenderer();  
 		rendererAll.setHorizontalAlignment(JLabel.CENTER);  
+
+
+		//Adding all the elements for the viewer beware
+		DefaultListModel dlmBeware = new DefaultListModel();
+		JList listBeware = new JList(dlmBeware);
+		JScrollPane scrollPaneBeware = new JScrollPane(listBeware);
+
+		for(String word : viewerBewareArr){
+			dlmBeware.addElement(word);
+		}
+		listBeware.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+		DefaultListCellRenderer rendererBeware =  (DefaultListCellRenderer)listBeware.getCellRenderer();  
+		rendererBeware.setHorizontalAlignment(JLabel.CENTER);  
+
 		
 		//Adding the components to the JFrame
 		tp.add("Watch History", watchHistory);
-		tp.add("Recommendations", recommendation);
+		tp.add("Viewer Beware", viewerBewarePanel);
 		tp.add("Movie List",movieList);
 		tp.setSize(850,950);
 
 		watchHistory.setSize(900,1000);
-		recommendation.setSize(900,1000);
+		viewerBewarePanel.setSize(900,1000);
 		watchHistory.setSize(900,1000);
 
 
+		//Setting up watch history
 		watchHistory.setLayout(new GridLayout(4,2));
 		watchHistory.add(tenDates);
 		watchHistory.add(scrollPaneTen);
@@ -257,6 +376,18 @@ public class CViewer extends JFrame implements ActionListener{
 		watchHistory.add(scrollPaneHun);
 		watchHistory.add(allDates);
 		watchHistory.add(scrollPaneAll);
+
+
+		//Setting up viewerBware
+		viewerBewarePanel.setLayout(new GridLayout(2,1));
+		JLabel viewerBeLabel = new JLabel("We think you won't like these films");
+		viewerBeLabel.setFont((new Font("Times New Roman", Font.PLAIN, 30)));
+		viewerBeLabel.setHorizontalAlignment(JLabel.CENTER);
+		viewerBeLabel.setVerticalAlignment(JLabel.CENTER);
+		viewerBewarePanel.add(viewerBeLabel);
+		viewerBewarePanel.add(scrollPaneBeware);
+		
+		//Add all the information for the slider which we missed in Phase 3
 		JPanel newPanel = new JPanel();
 		newPanel.setLayout(new GridLayout(2,1));
 		watchHistory.add(newPanel);
@@ -378,11 +509,7 @@ public class CViewer extends JFrame implements ActionListener{
 		//This portion is for grabbing all the users from the database
 		try{
 		  Statement stmt = conn.createStatement();
-		  JOptionPane.showMessageDialog(null, "Please wait, this could take a while...");
 		  for(int i = 0; i < titleListSorted.size()-1; i++){
-			if(i == titleListSorted.size()/2){
-				JOptionPane.showMessageDialog(null, "About half way done...");
-			}
 			String sqlStatement = "SELECT originalTitle FROM content WHERE titleId=" + titleListSorted.get(i) +";";
 			ResultSet result = stmt.executeQuery(sqlStatement);
 			while (result.next()) {
