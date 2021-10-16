@@ -53,7 +53,7 @@ public class hollywood_pair extends JFrame implements ActionListener{
     }
 
 
-    public static void main(String[] args)
+    public hollywood_pair()
     {
       //Building the connection
       Connection conn = null;
@@ -187,5 +187,9 @@ public class hollywood_pair extends JFrame implements ActionListener{
            
         }
     }
+
+    public static void main(String[] args){
+      //Main code is run in the class constructor
+     }
 
 }
