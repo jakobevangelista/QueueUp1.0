@@ -357,7 +357,8 @@ public class CViewer extends JFrame implements ActionListener{
 			averageRatingOfDirector[i] = (sum / ((float)ratingOfDirectors[i].size()));
 			sum = 0.0;
 		}
-
+		
+		// instead of pulling the one string, sort the average rating by index, then sort userwatchdirectors by popularity
 		String highestRatingDirector = userWatchedDirectors[averageRatingOfDirector.indexOf(Collections.max(averageRatingOfDirector))];
 		
 		// then i have to pull director list, find title not watched yet, recommend it (have to do this the long way in its own arraylist)
