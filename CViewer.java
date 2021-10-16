@@ -11,6 +11,8 @@ import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet; 
+import java.util.Collections; 
 
 
 public class CViewer extends JFrame implements ActionListener{
@@ -127,7 +129,7 @@ public class CViewer extends JFrame implements ActionListener{
 		tenDates.setHorizontalAlignment(JLabel.CENTER);
 		hundredDates.setHorizontalAlignment(JLabel.CENTER);
 		allDates.setHorizontalAlignment(JLabel.CENTER);
-		directorChoiceTitle.setHorizontalAlignment(JLabel.CENTER);
+		// directorChoiceTitle.setHorizontalAlignment(JLabel.CENTER);
 
 		
 		tenDates.setFont(new Font("Times New Roman", Font.PLAIN, 16));
@@ -227,6 +229,7 @@ public class CViewer extends JFrame implements ActionListener{
 	        String sqlStatement1 = "SELECT rating FROM users WHERE userId = " + uid + ";";
 	        String sqlStatement2 = "SELECT date FROM users WHERE userId = " + uid + ";";
 	        String sqlStatement3 = "SELECT titleId FROM users WHERE userId = " + uid + ";";
+			
 	        // execute each statement and store info in string
 	        ResultSet rating_result = stmt.executeQuery(sqlStatement1);
 	        String rating_string = "";
@@ -304,7 +307,8 @@ public class CViewer extends JFrame implements ActionListener{
 	}
 
 	private ArrayList<String> directorsChoice() {
-		// get directors of each movie
+		// dont forget we added a get director list into fetchwatchhistory when merging
+		// also dont forget included linkedlisthashset
 		Connection conn = null;
 		try {
 			//open a connection
@@ -330,36 +334,50 @@ public class CViewer extends JFrame implements ActionListener{
 	    } catch (Exception e) {
 			e.printStackTrace();
 	        System.err.println(e.getClass().getName()+": "+e.getMessage());
-	        return false;
+			ArrayList<String> errorArray = new ArrayList<String>();
+			errorArray.add("error");
+	        return errorArray;
 	    }
 
 		// array of unique directors user has watched
-		LinkedHashSet<String> userWatchedDirectors = new LinkedHashSet<String>();
+		LinkedHashSet<String> userWatchedDirectorsTemp = new LinkedHashSet<String>();
 		for(int i = 0; i < directorList.size(); i++) {
-			userWatchedDirectors.add(directorList[i]);
+			userWatchedDirectorsTemp.add(directorList.get(i));
+		}
+
+		ArrayList<String> userWatchedDirectors = new ArrayList<String>();
+		for(String i : userWatchedDirectorsTemp) {
+			userWatchedDirectors.add(i);
 		}
 		// find all indices with the same director and add the rating to a list of lists which indicates rating of individual directors
 		ArrayList<ArrayList<Integer>> ratingOfDirectors = new ArrayList<ArrayList<Integer>>();
+		ArrayList<Integer> individualRatings = new ArrayList<Integer>();
 		for(int i = 0; i < userWatchedDirectors.size(); i++) {
 			for(int j = 0; j < directorList.size(); j++) {
-				if(userWatchedDirectors[i] == directorList[j]) {
-					ratingOfDirectors[i][j] = Integer.valueOf(ratingList[j]);
+				if(userWatchedDirectors.get(i) == directorList.get(j)) {
+					individualRatings.add(Integer.valueOf(ratingList.get(j)));
 				}
 			}
+			ratingOfDirectors.add(individualRatings);
+			individualRatings.clear();
 		}
-		// average out ratings and find biggest one
-		float sum = 0.0;
-		ArrayList<float> averageRatingOfDirector = new ArrayList<float>();
+		// average out ratings and fsort from largest to smallest
+		Double sum = 0.0;
+		ArrayList<Double> averageRatingOfDirector = new ArrayList<Double>();
 		for(int i = 0; i < ratingOfDirectors.size(); i++) {
-			for(int j = 0; j < ratingOfDirectors[i].size(); j++) {
-				sum += ratingOfDirectors[i][j];
+			for(int j = 0; j < ratingOfDirectors.get(i).size(); j++) {
+				sum += ratingOfDirectors.get(i).get(j);
 			}
-			averageRatingOfDirector[i] = (sum / ((float)ratingOfDirectors[i].size()));
+			averageRatingOfDirector.add(sum / (Double.valueOf(ratingOfDirectors.get(i).size())));
 			sum = 0.0;
 		}
-		
-		// instead of pulling the one string, sort the average rating by index, then sort userwatchdirectors by popularity
-		String highestRatingDirector = userWatchedDirectors[averageRatingOfDirector.indexOf(Collections.max(averageRatingOfDirector))];
+			
+		ArrayList<String> sortedDirectorList = new ArrayList<String>();
+		while(userWatchedDirectors.size() != 0) {
+			int highestIndex = averageRatingOfDirector.indexOf(Collections.max(averageRatingOfDirector));
+			sortedDirectorList.add(userWatchedDirectors.get(highestIndex));
+			userWatchedDirectors.remove(highestIndex);
+		}
 		
 		// then i have to pull director list, find title not watched yet, recommend it (have to do this the long way in its own arraylist)
 		// if all titles watched from current director, recommend next favorite director, repeat until found a director that the user has not seen a movie from yet
