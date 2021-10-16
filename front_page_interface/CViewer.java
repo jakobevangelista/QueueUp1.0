@@ -71,8 +71,6 @@ public class CViewer extends JFrame implements ActionListener{
 		for(int j = 0; j < worstRatings.size(); j++){
 			worstMovies.add(titleList.get(worstRatings.get(j))); //Getting the movie at the index of the worst movie
 		}
-		System.out.println(worstMovies);
-
 
 		//Now we need to grab all users from the database
 		Connection conn = null;
@@ -141,7 +139,6 @@ public class CViewer extends JFrame implements ActionListener{
 				}
 				countWorst.add(count);
 			}
-			System.out.println(countWorst);
 
 			//Now we have an array with all the counts for all the users in the database, find the max index
 			int max = countWorst.get(0);
@@ -152,7 +149,6 @@ public class CViewer extends JFrame implements ActionListener{
 					indexMax = num;
 				}
 			}
-
 
 			//Found the best index, now get the user
 			String userMax = allUserNames.get(indexMax);
@@ -209,7 +205,7 @@ public class CViewer extends JFrame implements ActionListener{
 			}
 			titleN_string = titleN_string.replace("{", "").replace("}", "");
 			viewerBewareArr = new ArrayList<String>(Arrays.asList(titleN_string.split("~")));
-	     
+
 	        // convert list to array list and store it as private variable
 	        conn.close();
 	    } catch (Exception e) {
@@ -278,7 +274,10 @@ public class CViewer extends JFrame implements ActionListener{
 		newSlider.setPaintTicks(true);
 		newSlider.addChangeListener(e -> sliderChanged());
 
-		
+		newLabel.setFont((new Font("Times New Roman", Font.PLAIN, 16)));
+		newLabel.setHorizontalAlignment(JLabel.CENTER);
+		newLabel.setVerticalAlignment(JLabel.CENTER);
+			
 
 		
 
