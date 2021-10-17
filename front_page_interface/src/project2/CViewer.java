@@ -230,7 +230,7 @@ public class CViewer extends JFrame implements ActionListener{
 
 	// Strings of recommended movie
 	static private ArrayList<Integer> vChoiceTitleIdRecs = new ArrayList<Integer>();
-	// creates a list of recommendations based on the users favorite director, writer, and genre
+	// creates a list of recommendations based on the users favorite director, writer, genre, year, and actor
 	static public void viewersChoice(){
 
 		int lengthOfHistoryToLookAt = ratingListSorted.size()-1;
