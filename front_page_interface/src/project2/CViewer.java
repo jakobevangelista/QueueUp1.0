@@ -51,7 +51,7 @@ public class CViewer extends JFrame implements ActionListener{
 		JOptionPane.showMessageDialog(null, "Developing Viewer History...");
 		callDatabase();
 		JOptionPane.showMessageDialog(null, "Developing Viewer Beware...");
-		// viewerBeware();
+		viewerBeware();
 		JOptionPane.showMessageDialog(null, "Done");
 		createGUI();
 
@@ -228,10 +228,12 @@ public class CViewer extends JFrame implements ActionListener{
 		return LocalDate.format(DateTimeFormatter.ofPattern("LLLL dd yyyy"));
 	}
 
+	// Strings of recommended movie
+	static private ArrayList<Integer> vChoiceTitleIdRecs = new ArrayList<Integer>();
 	// creates a list of recommendations based on the users favorite director, writer, and genre
 	static public void viewersChoice(){
 
-		int lengthOfHistoryToLookAt = ratingListSorted.size()-10;
+		int lengthOfHistoryToLookAt = ratingListSorted.size()-1;
 		// grab the last 50 movies the user watched and rated a 4 or 5
 		ArrayList<Integer> favMovies = new ArrayList<Integer>();
 		for (int i = ratingListSorted.size()-1; i > ratingListSorted.size()-lengthOfHistoryToLookAt-1; i--){
@@ -248,16 +250,20 @@ public class CViewer extends JFrame implements ActionListener{
 	           "csce315903_14user", "GROUP14CS315");
 	        Statement stmt = conn.createStatement();
 			
-			ArrayList<Integer> favYears = new ArrayList<Integer>();
-			ArrayList<String> favGenres = new ArrayList<String>();
+			String favSqlString = "(";
 			for(int i = 0; i < favMovies.size(); i++){
 				// grab the start years of the users favorite movies
-				int tIdIndex = favMovies.get(i);
-				String sqlStatement = "SELECT * FROM content WHERE titleId = " + titleListSorted.get(tIdIndex) + ";";
-				ResultSet name_result = stmt.executeQuery(sqlStatement);
-				name_result.next();
+				favSqlString += titleListSorted.get(i) + ", ";
+			}
+			favSqlString = favSqlString.substring(0, favSqlString.length()-2) + ")";
+
+
+			String sqlStatement = "SELECT * FROM content WHERE titleId in " + favSqlString + ";";
+			ResultSet name_result = stmt.executeQuery(sqlStatement);
+			ArrayList<Integer> favYears = new ArrayList<Integer>();
+			ArrayList<String> favGenres = new ArrayList<String>();
+			while(name_result.next()){
 				favYears.add(name_result.getInt("startyear"));
-				
 				// grab the genres for every movie the user liked and add them to a list
 				String gString = name_result.getString("genres").replace("{", "").replace("}", "");
 				for(String s: gString.split(",")){
@@ -294,16 +300,10 @@ public class CViewer extends JFrame implements ActionListener{
 			System.out.println("Fav genre: " + mostCommonGenre + " occurs: " + maxOccurences + " times.");
 
 
-			String directorSqlString = "(";
-			for(int i = 0; i < favMovies.size(); i++){
-				directorSqlString += titleListSorted.get(favMovies.get(i)) + ", ";
-			}
-			directorSqlString = directorSqlString.substring(0, directorSqlString.length()-2) + ")";
-
-			ArrayList<String> favDirectorWriter = new ArrayList<String>();
-			String sqlStatement = "SELECT * FROM contentcreators WHERE titleId in " + directorSqlString + ";";
+			sqlStatement = "SELECT * FROM contentcreators WHERE titleId in " + favSqlString + ";";
 			ResultSet directorSqlResultSet = stmt.executeQuery(sqlStatement);
 			// grab every director nameid from the movies the user liked
+			ArrayList<String> favDirectorWriter = new ArrayList<String>();
 			while(directorSqlResultSet.next()){
 				String dirRes = directorSqlResultSet.getString("directornameid").replace("{", "").replace("}", "");
 				for(String s: dirRes.split(",")){
@@ -340,16 +340,9 @@ public class CViewer extends JFrame implements ActionListener{
 
 			System.out.println("Favorite Director/Writer: " + mostCommonDirector + " occurs: " + maxOccurences + " times.");
 
-			String favActorsSqlStatement = "(";
-			for(int i = 0; i < favMovies.size(); i++){
-				favActorsSqlStatement += favMovies.get(i) + ", ";
-			}
-			favActorsSqlStatement = favActorsSqlStatement.substring(0, favActorsSqlStatement.length()-2) + ")";
-
 			ArrayList<Integer> favActors = new ArrayList<Integer>();
-			// int tIdIndex = favMovies.get(i);
-			String actorsSqlStatement = "SELECT * FROM castmembers WHERE titleId in " + favActorsSqlStatement + ";";
-			ResultSet name_result = stmt.executeQuery(actorsSqlStatement);
+			String actorsSqlStatement = "SELECT * FROM castmembers WHERE titleId in " + favSqlString + ";";
+			name_result = stmt.executeQuery(actorsSqlStatement);
 			// grab every actor nameid from the movies the user liked
 			while(name_result.next()){
 				favActors.add(name_result.getInt("nameid"));
@@ -362,7 +355,7 @@ public class CViewer extends JFrame implements ActionListener{
 			for (int u: uniqueActors){
 				int occurences = 0;
 				for (int s: favActors){
-					if (s == u){
+					if (s == u && s != -1){
 						occurences += 1;
 					}
 				}
@@ -377,15 +370,16 @@ public class CViewer extends JFrame implements ActionListener{
 			// find movies in the db that have the same genre and startyear as the users favorite 
 			ArrayList<Integer> eligibleMovies = new ArrayList<Integer>();
 			String eligibleMoviesString = "(";
-			for(int i = favYearAvg -5; i < favYearAvg + 5; i++){
-				String eligibleMoviesSqlStatement = "SELECT * FROM content WHERE startyear = " + favYearAvg + ";";
+			for(int i = favYearAvg - 10; i < favYearAvg + 10; i++){
+				String eligibleMoviesSqlStatement = "SELECT * FROM content WHERE startyear = " + i + " AND NOT titleId in " + favSqlString + ";";
 				ResultSet genRes = stmt.executeQuery(eligibleMoviesSqlStatement);
 				while(genRes.next()){
 					String gString = genRes.getString("genres").replace("{", "").replace("}", "");
 					for(String s: gString.split(",")){
 						if(s.equals(mostCommonGenre)){
-							eligibleMovies.add(genRes.getInt("titleId"));
-							eligibleMoviesString += genRes.getInt("titleId") + ", ";
+							int title = genRes.getInt("titleId");
+							eligibleMovies.add(title);
+							eligibleMoviesString += title + ", ";
 							break;
 						}
 					}
@@ -400,18 +394,39 @@ public class CViewer extends JFrame implements ActionListener{
 			String trimmedSqlStatement = "SELECT * FROM contentcreators WHERE titleId in " + eligibleMoviesString + ";";
 			ResultSet res = stmt.executeQuery(trimmedSqlStatement);
 			while(res.next()){
-				String dString = res.getString("directornameid").replace("}", "").replace("{", "");
+				String dString = res.getString("directornameid").replace("{", "").replace("}", "");
 				dString += "," + res.getString("writernameid").replace("{", "").replace("}", "");
+				// System.out.println(dString);
+
 				for(String s: dString.split(",")){
-					if(s.equals(mostCommonDirector)){
-						trimmedDownMovies.add(Integer.parseInt(s));
-						System.out.print(s + ", ");
+					// System.out.println(s);
+					if(Integer.parseInt(s) == Integer.parseInt(mostCommonDirector)){
+						trimmedDownMovies.add(res.getInt("titleId"));
 						break;
+					}
+				}
+			}
+			
+			if(trimmedDownMovies.size() == 0){
+				System.out.println("Could not find any movies with your favorite director, trying to find a movie with your favorite actor instead");
+				trimmedSqlStatement = "SELECT nameId, titleId FROM castmembers WHERE titleId in " + eligibleMoviesString + ";";
+				res = stmt.executeQuery(trimmedSqlStatement);
+				while(res.next()){
+					String aString = res.getString("nameId").replace("{", "").replace("}", "");
+					for(String s: aString.split(",")){
+						// System.out.println(s);
+						if(Integer.parseInt(s) == mostCommonActor){
+							trimmedDownMovies.add(res.getInt("titleId"));
+							break;
+						}
 					}
 				}
 			}
 
 			// System.out.println(trimmedDownMovies);
+			System.out.print("List of Recommended Movies based on Viewers Choice: ");
+			System.out.println(trimmedDownMovies);
+			vChoiceTitleIdRecs = trimmedDownMovies;
 			conn.close();
 		} catch (Exception e) {
 	        e.printStackTrace();
@@ -539,16 +554,16 @@ public class CViewer extends JFrame implements ActionListener{
 
 
 		//Adding all the elements for the viewer beware
-		// DefaultListModel dlmBeware = new DefaultListModel();
-		// JList listBeware = new JList(dlmBeware);
-		// JScrollPane scrollPaneBeware = new JScrollPane(listBeware);
+		DefaultListModel dlmBeware = new DefaultListModel();
+		JList listBeware = new JList(dlmBeware);
+		JScrollPane scrollPaneBeware = new JScrollPane(listBeware);
 
-		// for(String word : viewerBewareArr){
-		// 	dlmBeware.addElement(word);
-		// }
-		// listBeware.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-		// DefaultListCellRenderer rendererBeware =  (DefaultListCellRenderer)listBeware.getCellRenderer();  
-		// rendererBeware.setHorizontalAlignment(JLabel.CENTER);  
+		for(String word : viewerBewareArr){
+			dlmBeware.addElement(word);
+		}
+		listBeware.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+		DefaultListCellRenderer rendererBeware =  (DefaultListCellRenderer)listBeware.getCellRenderer();  
+		rendererBeware.setHorizontalAlignment(JLabel.CENTER);  
 
 		
 		//Adding the components to the JFrame
