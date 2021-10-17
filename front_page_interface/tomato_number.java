@@ -19,8 +19,6 @@ import java.util.Map.Entry;
 import java.util.Enumeration;
 import java.io.OutputStream;
 
-
-
 public class tomato_number extends JFrame implements ActionListener{
     static JFrame f; 
     
@@ -45,6 +43,8 @@ public class tomato_number extends JFrame implements ActionListener{
   public static JTextArea input2options = new JTextArea("");
   public static JTextArea userRatings = new JTextArea("");
   public static JTextArea tomoto_path = new JTextArea("");
+  public static String userInput1 = "";
+  public static String userInput2 = "";
 
 
 
@@ -71,7 +71,6 @@ public class tomato_number extends JFrame implements ActionListener{
 
       input1options.append("titleId" + " | \t" + "titleType" + " | \t" + "originalTitle" + " | \t \t" + "startYear" + " | \t" + "genres" + "\n");
       while (result.next()) {
-        // input1options.append(result.getString("originalTitle") + "\t" + userInput1 + "\n");
         if (result.getString("originalTitle").equals(userInput1)) {
           input1options.append(result.getString("titleId") + " | \t" +  
                           result.getString("titleType") + " | \t" +  
@@ -84,7 +83,6 @@ public class tomato_number extends JFrame implements ActionListener{
       result.beforeFirst(); // go back to before the first row
       input2options.append("titleId" + " | \t" + "titleType" + " | \t" + "originalTitle" + " | \t \t" + "startYear" + " | \t" + "genres" + "\n");
       while (result.next()) {
-        // input1options.append(result.getString("originalTitle") + "\t" + userInput2 + "\n");
         if (result.getString("originalTitle").equals(userInput2)) {
           input2options.append(result.getString("titleId") + " | \t" +  
                           result.getString("titleType") + " | \t" +  
@@ -93,14 +91,6 @@ public class tomato_number extends JFrame implements ActionListener{
                           result.getString("genres") + "\n");                       //this print statement is for a content
         }
       }
-
-      // get title ids of all titles with the specified names
-      // String title_string = "";
-      // while (result.next()) {
-      //   title_string += result.getString("titleId");
-      // }
-      // title_string = title_string.replace("{", "").replace("}", "");
-      // titleList = new ArrayList<String>(Arrays.asList(title_string.split(",")));
 
 
       // Let users Pick which option of the title they want and save the two titleIds
@@ -124,9 +114,9 @@ public class tomato_number extends JFrame implements ActionListener{
       String title_string = "";
       int title1_index = -1;
       int title2_index = -1;
-      for (int i = 0; i < 1; i++) {
-        result.next();
-      // while (result.next()) {
+      // for (int i = 0; i < 1; i++) {
+      //   result.next();
+      while (result.next()) {
         title_string += result.getString("titleId");
         
         // Putting titleIds into an array
@@ -137,21 +127,26 @@ public class tomato_number extends JFrame implements ActionListener{
         if (!(titleList.indexOf(String.valueOf(user_titleId1)) < 1)){
           title1_index = titleList.indexOf(String.valueOf(user_titleId1));
           System.out.println("User " + result.getString("userId") + " has title1 at index: " + title1_index);
+          System.out.println("Id of title at this index: " + titleList.get(title1_index));
         }
 
         // Getting index of User title 2
         if (!(titleList.indexOf(String.valueOf(user_titleId2)) < 1)){
           title2_index = titleList.indexOf(String.valueOf(user_titleId2));
           System.out.println("User " + result.getString("userId") + " has title2 at index: " + title2_index);
+          System.out.println("Id of title at this index: " + titleList.get(title2_index) + "\n");
         }
 
-        if (!(!(titleList.indexOf(String.valueOf(user_titleId1)) < 1) && (!(titleList.indexOf(String.valueOf(user_titleId2)) < 1)))){
-          // If this prints, the assumption that every user has rated both movies is incorrect
-          System.out.println("User " + result.getString("userId") + " did not rate both movies.");
-          i--;
-        }
+        // if (!(!(titleList.indexOf(String.valueOf(user_titleId1)) < 1) && (!(titleList.indexOf(String.valueOf(user_titleId2)) < 1)))){
+        //   // If this prints, the assumption that every user has rated both movies is incorrect
+        //   System.out.println("User " + result.getString("userId") + " did not rate both movies.");
+        //   i--;
+        // }
 
         // Clearing the titleList for future user
+        title_string = "";
+        title1_index = -1;
+        title2_index = -1;
         titleList.clear();
       }
 
@@ -184,6 +179,7 @@ public class tomato_number extends JFrame implements ActionListener{
         }
         
         // Clearing the ratinglist for future user
+        rating_string = "";
         ratingList.clear();
       }
 
