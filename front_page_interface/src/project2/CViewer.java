@@ -594,7 +594,7 @@ public class CViewer extends JFrame implements ActionListener{
 		viewerBeLabel.setHorizontalAlignment(JLabel.CENTER);
 		viewerBeLabel.setVerticalAlignment(JLabel.CENTER);
 		viewerBewarePanel.add(viewerBeLabel);
-		// viewerBewarePanel.add(scrollPaneBeware);
+		viewerBewarePanel.add(scrollPaneBeware);
 		
 		//Add all the information for the slider which we missed in Phase 3
 		JPanel newPanel = new JPanel();
