@@ -231,14 +231,14 @@ public class CViewer extends JFrame implements ActionListener{
 	// creates a list of recommendations based on the users favorite director, writer, and genre
 	static public void viewersChoice(){
 
+		int lengthOfHistoryToLookAt = ratingListSorted.size()-10;
 		// grab the last 50 movies the user watched and rated a 4 or 5
 		ArrayList<Integer> favMovies = new ArrayList<Integer>();
-		for (int i = ratingListSorted.size()-1; i > ratingListSorted.size()-51; i--){
+		for (int i = ratingListSorted.size()-1; i > ratingListSorted.size()-lengthOfHistoryToLookAt-1; i--){
 			if(ratingListSorted.get(i) == 4 || ratingListSorted.get(i) == 5){
 				favMovies.add(i);
 			}
 		}
-		System.out.println(favMovies);
 
 		// open a connection for use throughout the function
 		Connection conn = null;
@@ -271,8 +271,8 @@ public class CViewer extends JFrame implements ActionListener{
 				sum += favYears.get(i);
 			}
 			int favYearAvg = sum / favYears.size();
-			System.out.println(favYearAvg);
 
+			System.out.println("Avg fav year: " + favYearAvg);
 
 			// find the users favorite genre
 			List<String> uniqueElems = favGenres.stream().distinct().collect(Collectors.toList());
@@ -291,16 +291,127 @@ public class CViewer extends JFrame implements ActionListener{
 				}
 			}
 
-			System.out.println(favGenres);
-			System.out.println(mostCommonGenre);
+			System.out.println("Fav genre: " + mostCommonGenre + " occurs: " + maxOccurences + " times.");
 
+
+			String directorSqlString = "(";
+			for(int i = 0; i < favMovies.size(); i++){
+				directorSqlString += titleListSorted.get(favMovies.get(i)) + ", ";
+			}
+			directorSqlString = directorSqlString.substring(0, directorSqlString.length()-2) + ")";
+
+			ArrayList<String> favDirectorWriter = new ArrayList<String>();
+			String sqlStatement = "SELECT * FROM contentcreators WHERE titleId in " + directorSqlString + ";";
+			ResultSet directorSqlResultSet = stmt.executeQuery(sqlStatement);
 			// grab every director nameid from the movies the user liked
+			while(directorSqlResultSet.next()){
+				String dirRes = directorSqlResultSet.getString("directornameid").replace("{", "").replace("}", "");
+				for(String s: dirRes.split(",")){
+					if(!s.equals("-1")){
+						favDirectorWriter.add(s);
+					}
+				}
 
-			// find the users favorite director
+				// grab every writer nameid from the movies the user liked
+				String writerRes = directorSqlResultSet.getString("writernameid").replace("{", "").replace("}", "");
+				for(String s: writerRes.split(",")){
+					if(!s.equals("-1")){
+						favDirectorWriter.add(s);
+					}
+				}
+			}
 
-			// grab every writer nameid from the movies the user liked
+			// find the users favorite director/writer
+			List<String> uniqueDirectors = favDirectorWriter.stream().distinct().collect(Collectors.toList());
+			maxOccurences = 0;
+			String mostCommonDirector = "";
+			for (String u: uniqueDirectors){
+				int occurences = 0;
+				for (String s: favDirectorWriter){
+					if (s.equals(u)){
+						occurences += 1;
+					}
+				}
+				if(occurences > maxOccurences){
+					mostCommonDirector = u;
+					maxOccurences = occurences;
+				}
+			}
 
-			// find the users favorite writer
+			System.out.println("Favorite Director/Writer: " + mostCommonDirector + " occurs: " + maxOccurences + " times.");
+
+			String favActorsSqlStatement = "(";
+			for(int i = 0; i < favMovies.size(); i++){
+				favActorsSqlStatement += favMovies.get(i) + ", ";
+			}
+			favActorsSqlStatement = favActorsSqlStatement.substring(0, favActorsSqlStatement.length()-2) + ")";
+
+			ArrayList<Integer> favActors = new ArrayList<Integer>();
+			// int tIdIndex = favMovies.get(i);
+			String actorsSqlStatement = "SELECT * FROM castmembers WHERE titleId in " + favActorsSqlStatement + ";";
+			ResultSet name_result = stmt.executeQuery(actorsSqlStatement);
+			// grab every actor nameid from the movies the user liked
+			while(name_result.next()){
+				favActors.add(name_result.getInt("nameid"));
+			}
+
+			// find the users favorite director/writer
+			List<Integer> uniqueActors = favActors.stream().distinct().collect(Collectors.toList());
+			maxOccurences = 0;
+			int mostCommonActor = -1;
+			for (int u: uniqueActors){
+				int occurences = 0;
+				for (int s: favActors){
+					if (s == u){
+						occurences += 1;
+					}
+				}
+				if(occurences > maxOccurences){
+					mostCommonActor = u;
+					maxOccurences = occurences;
+				}
+			}
+
+			System.out.println("Most common actor: " + mostCommonActor + " occurs: " + maxOccurences + " times.");
+
+			// find movies in the db that have the same genre and startyear as the users favorite 
+			ArrayList<Integer> eligibleMovies = new ArrayList<Integer>();
+			String eligibleMoviesString = "(";
+			for(int i = favYearAvg -5; i < favYearAvg + 5; i++){
+				String eligibleMoviesSqlStatement = "SELECT * FROM content WHERE startyear = " + favYearAvg + ";";
+				ResultSet genRes = stmt.executeQuery(eligibleMoviesSqlStatement);
+				while(genRes.next()){
+					String gString = genRes.getString("genres").replace("{", "").replace("}", "");
+					for(String s: gString.split(",")){
+						if(s.equals(mostCommonGenre)){
+							eligibleMovies.add(genRes.getInt("titleId"));
+							eligibleMoviesString += genRes.getInt("titleId") + ", ";
+							break;
+						}
+					}
+				}
+			}
+			eligibleMoviesString = eligibleMoviesString.substring(0, eligibleMoviesString.length()-2) + ")";
+
+			// System.out.println(eligibleMoviesString);
+			System.out.println("Found: " + eligibleMovies.size() + " " + mostCommonGenre + " movies around your favorite year.");
+
+			ArrayList<Integer> trimmedDownMovies = new ArrayList<Integer>();
+			String trimmedSqlStatement = "SELECT * FROM contentcreators WHERE titleId in " + eligibleMoviesString + ";";
+			ResultSet res = stmt.executeQuery(trimmedSqlStatement);
+			while(res.next()){
+				String dString = res.getString("directornameid").replace("}", "").replace("{", "");
+				dString += "," + res.getString("writernameid").replace("{", "").replace("}", "");
+				for(String s: dString.split(",")){
+					if(s.equals(mostCommonDirector)){
+						trimmedDownMovies.add(Integer.parseInt(s));
+						System.out.print(s + ", ");
+						break;
+					}
+				}
+			}
+
+			// System.out.println(trimmedDownMovies);
 			conn.close();
 		} catch (Exception e) {
 	        e.printStackTrace();
