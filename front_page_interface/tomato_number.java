@@ -42,14 +42,23 @@ public class tomato_number extends JFrame implements ActionListener{
   public static JTextArea input1options = new JTextArea("");
   public static JTextArea input2options = new JTextArea("");
   public static JTextArea userRatings = new JTextArea("");
-  public static JTextArea tomoto_path = new JTextArea("");
+  public static JTextArea tomato_path = new JTextArea("");
   public static String userInput1 = "";
   public static String userInput2 = "";
 
+  public <String> ArrayList<String> intersection(ArrayList<String> list1, ArrayList<String> list2) {
+    ArrayList<String> list = new ArrayList<String>();
 
+    for (String t : list1) {
+      if(list2.contains(t)) {
+        list.add(t);
+      }
+    }
 
-  // public 
-  tomato_number() {
+    return list;
+  }
+
+  public tomato_number() {
     //Building the connection
     Connection conn = null;
     //TODO STEP 1
@@ -94,8 +103,8 @@ public class tomato_number extends JFrame implements ActionListener{
 
 
       // Let users Pick which option of the title they want and save the two titleIds
-      int user_titleId1 = 6551102;    // Ricochet
-      int user_titleId2 = 8082444;    // Playing God
+      int user_titleId1 = 7029736;    // Ricochet
+      int user_titleId2 = 9564262;    // Playing God
 
 
       // get all users who rated the specific movies
@@ -114,55 +123,41 @@ public class tomato_number extends JFrame implements ActionListener{
       String title_string = "";
       int title1_index = -1;
       int title2_index = -1;
-      // for (int i = 0; i < 1; i++) {
-      //   result.next();
+      ArrayList<String> userList1 = new ArrayList<String>(); // list of all users who rated title1 above a 3
+      ArrayList<String> userList2 = new ArrayList<String>(); // list of all users who rated title2 above a 3
+      ArrayList<String> intersectList = new ArrayList<String>(); // list of all users the two titles have in common
+      
       while (result.next()) {
-        title_string += result.getString("titleId");
-        
         // Putting titleIds into an array
+        title_string += result.getString("titleId");
         title_string = title_string.replace("{", "").replace("}", ",");
         titleList = new ArrayList<String>(Arrays.asList(title_string.split(",")));
         
         // Getting index of User title 1
         if (!(titleList.indexOf(String.valueOf(user_titleId1)) < 1)){
           title1_index = titleList.indexOf(String.valueOf(user_titleId1));
-          System.out.println("User " + result.getString("userId") + " has title1 at index: " + title1_index);
-          System.out.println("Id of title at this index: " + titleList.get(title1_index));
+          // System.out.println("User " + result.getString("userId") + " has title1 at index: " + title1_index);
+          // System.out.println("Id of title at this index: " + titleList.get(title1_index));
         }
 
         // Getting index of User title 2
         if (!(titleList.indexOf(String.valueOf(user_titleId2)) < 1)){
           title2_index = titleList.indexOf(String.valueOf(user_titleId2));
-          System.out.println("User " + result.getString("userId") + " has title2 at index: " + title2_index);
-          System.out.println("Id of title at this index: " + titleList.get(title2_index) + "\n");
+          // System.out.println("User " + result.getString("userId") + " has title2 at index: " + title2_index);
+          // System.out.println("Id of title at this index: " + titleList.get(title2_index) + "\n");
         }
 
-        // if (!(!(titleList.indexOf(String.valueOf(user_titleId1)) < 1) && (!(titleList.indexOf(String.valueOf(user_titleId2)) < 1)))){
-        //   // If this prints, the assumption that every user has rated both movies is incorrect
-        //   System.out.println("User " + result.getString("userId") + " did not rate both movies.");
-        //   i--;
-        // }
-
-        // Clearing the titleList for future user
-        title_string = "";
-        title1_index = -1;
-        title2_index = -1;
-        titleList.clear();
-      }
-
-      result.beforeFirst(); // go back to before the first row
-      while (result.next()) {
-        rating_string += result.getString("rating");
-
         // Putting ratings into an array
+        rating_string += result.getString("rating");
         rating_string = rating_string.replace("{", "").replace("}", ",");
         ratingList = new ArrayList<String>(Arrays.asList(rating_string.split(",")));
 
         // Getting rating of title 1 for this user
         try {
           if (Integer.valueOf(ratingList.get(title1_index)) >= 4){
-            System.out.println("User " + result.getString("userId") + " rated title1:");
-            System.out.println(ratingList.get(title1_index));
+            // System.out.println("User " + result.getString("userId") + " rated title1:");
+            // System.out.println(ratingList.get(title1_index));
+            userList1.add(result.getString("userId"));
           } 
         } catch  (IndexOutOfBoundsException e) {
           ; // If user didn't rate this title, just continue
@@ -171,21 +166,31 @@ public class tomato_number extends JFrame implements ActionListener{
         // Getting rating of title 2 for this user
         try {
           if (Integer.valueOf(ratingList.get(title2_index)) >= 4){
-            System.out.println("User " + result.getString("userId") + " rated title2:");
-            System.out.println(ratingList.get(title2_index));
+            // System.out.println("User " + result.getString("userId") + " rated title2:");
+            // System.out.println(ratingList.get(title2_index));
+            userList2.add(result.getString("userId"));
           }
         } catch (IndexOutOfBoundsException e) {
           ; // If user didn't rate this title, just continue
         }
-        
-        // Clearing the ratinglist for future user
+
+        // Clearing the variables for future user
+        title_string = "";
+        title1_index = -1;
+        title2_index = -1;
+        titleList.clear();
         rating_string = "";
         ratingList.clear();
       }
 
+      System.out.println(userList1 + "\n");
+      System.out.println(userList2 + "\n");
+      intersectList = intersection(userList1, userList2);
+      System.out.println(intersectList + "\n");
 
 
       // getting the shortest tomato number and route
+      tomato_path.append(userInput1 + "-->" + intersectList.get(1) + "-->" + userInput2);
       
     
 
@@ -213,6 +218,7 @@ public class tomato_number extends JFrame implements ActionListener{
       container.add(input1options);
       container.add(input2options);
       container.add(userRatings);
+      container.add(tomato_path);
       // JScrollPane scroll1 = new JScrollPane (input1options);
       // JScrollPane scroll2 = new JScrollPane (input2options);
 
