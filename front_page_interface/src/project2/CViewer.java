@@ -11,6 +11,8 @@ import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Collectors;
+
 
 
 public class CViewer extends JFrame implements ActionListener{
@@ -42,13 +44,14 @@ public class CViewer extends JFrame implements ActionListener{
 		 	System.exit(-1);
 		}
 		//Assert that the lists are equal sizes and not 0. You must use the argument -ea during execution in order for this to do anything.
-		assert ratingList.size() == dateList.size() && dateList.size() == titleList.size() && titleList.size() != 0: "Invalid list sizes.";
+		// assert ratingList.size() == dateList.size() && dateList.size() == titleList.size() && titleList.size() != 0: "Invalid list sizes.";
 		sortByDate();
-		askForHistoryLength();
+		JOptionPane.showMessageDialog(null, "Developing Viewers Choice...");
+		viewersChoice();
 		JOptionPane.showMessageDialog(null, "Developing Viewer History...");
 		callDatabase();
 		JOptionPane.showMessageDialog(null, "Developing Viewer Beware...");
-		viewerBeware();
+		// viewerBeware();
 		JOptionPane.showMessageDialog(null, "Done");
 		createGUI();
 
@@ -225,6 +228,86 @@ public class CViewer extends JFrame implements ActionListener{
 		return LocalDate.format(DateTimeFormatter.ofPattern("LLLL dd yyyy"));
 	}
 
+	// creates a list of recommendations based on the users favorite director, writer, and genre
+	static public void viewersChoice(){
+
+		// grab the last 50 movies the user watched and rated a 4 or 5
+		ArrayList<Integer> favMovies = new ArrayList<Integer>();
+		for (int i = ratingListSorted.size()-1; i > ratingListSorted.size()-51; i--){
+			if(ratingListSorted.get(i) == 4 || ratingListSorted.get(i) == 5){
+				favMovies.add(i);
+			}
+		}
+		System.out.println(favMovies);
+
+		// open a connection for use throughout the function
+		Connection conn = null;
+		try {
+	        Class.forName("org.postgresql.Driver");
+	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+	           "csce315903_14user", "GROUP14CS315");
+	        Statement stmt = conn.createStatement();
+			
+			ArrayList<Integer> favYears = new ArrayList<Integer>();
+			ArrayList<String> favGenres = new ArrayList<String>();
+			for(int i = 0; i < favMovies.size(); i++){
+				// grab the start years of the users favorite movies
+				int tIdIndex = favMovies.get(i);
+				String sqlStatement = "SELECT * FROM content WHERE titleId = " + titleListSorted.get(tIdIndex) + ";";
+				ResultSet name_result = stmt.executeQuery(sqlStatement);
+				name_result.next();
+				favYears.add(name_result.getInt("startyear"));
+				
+				// grab the genres for every movie the user liked and add them to a list
+				String gString = name_result.getString("genres").replace("{", "").replace("}", "");
+				for(String s: gString.split(",")){
+					favGenres.add(s);
+				}
+			}
+
+			// calculate the users favorite year
+			int sum = 0;
+			for(int i = 0; i < favYears.size(); i++){
+				sum += favYears.get(i);
+			}
+			int favYearAvg = sum / favYears.size();
+			System.out.println(favYearAvg);
+
+
+			// find the users favorite genre
+			List<String> uniqueElems = favGenres.stream().distinct().collect(Collectors.toList());
+			int maxOccurences = 0;
+			String mostCommonGenre = "";
+			for (String u: uniqueElems){
+				int occurences = 0;
+				for (String s: favGenres){
+					if (s.equals(u)){
+						occurences += 1;
+					}
+				}
+				if(occurences > maxOccurences){
+					mostCommonGenre = u;
+					maxOccurences = occurences;
+				}
+			}
+
+			System.out.println(favGenres);
+			System.out.println(mostCommonGenre);
+
+			// grab every director nameid from the movies the user liked
+
+			// find the users favorite director
+
+			// grab every writer nameid from the movies the user liked
+
+			// find the users favorite writer
+			conn.close();
+		} catch (Exception e) {
+	        e.printStackTrace();
+	        System.err.println(e.getClass().getName()+": "+e.getMessage());
+	    }
+	}
+
 	static JSlider newSlider;
 	static JLabel newLabel = new JLabel("Slide For Watch History");
 	static DefaultListModel dlmSlider = new DefaultListModel();
@@ -345,16 +428,16 @@ public class CViewer extends JFrame implements ActionListener{
 
 
 		//Adding all the elements for the viewer beware
-		DefaultListModel dlmBeware = new DefaultListModel();
-		JList listBeware = new JList(dlmBeware);
-		JScrollPane scrollPaneBeware = new JScrollPane(listBeware);
+		// DefaultListModel dlmBeware = new DefaultListModel();
+		// JList listBeware = new JList(dlmBeware);
+		// JScrollPane scrollPaneBeware = new JScrollPane(listBeware);
 
-		for(String word : viewerBewareArr){
-			dlmBeware.addElement(word);
-		}
-		listBeware.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-		DefaultListCellRenderer rendererBeware =  (DefaultListCellRenderer)listBeware.getCellRenderer();  
-		rendererBeware.setHorizontalAlignment(JLabel.CENTER);  
+		// for(String word : viewerBewareArr){
+		// 	dlmBeware.addElement(word);
+		// }
+		// listBeware.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+		// DefaultListCellRenderer rendererBeware =  (DefaultListCellRenderer)listBeware.getCellRenderer();  
+		// rendererBeware.setHorizontalAlignment(JLabel.CENTER);  
 
 		
 		//Adding the components to the JFrame
@@ -385,7 +468,7 @@ public class CViewer extends JFrame implements ActionListener{
 		viewerBeLabel.setHorizontalAlignment(JLabel.CENTER);
 		viewerBeLabel.setVerticalAlignment(JLabel.CENTER);
 		viewerBewarePanel.add(viewerBeLabel);
-		viewerBewarePanel.add(scrollPaneBeware);
+		// viewerBewarePanel.add(scrollPaneBeware);
 		
 		//Add all the information for the slider which we missed in Phase 3
 		JPanel newPanel = new JPanel();
@@ -551,28 +634,10 @@ public class CViewer extends JFrame implements ActionListener{
 
 	}
 	
-	private void askForHistoryLength() {
-		JFrame f = new JFrame("");
-		f.getContentPane().removeAll();
-		JLabel lengthOfHistoryLabel = new JLabel("label");
-		lengthOfHistoryLabel.setBounds(10,10, 250, 20);
-		lengthOfHistoryLabel.setText("How many movies do you want to display?");
-		f.add(lengthOfHistoryLabel);
-		
-		JTextField field = new JTextField("field");
-		field.setText("");
-		field.setBounds(10, 265, 50, 20);
-		f.add(field);
-	}
-	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
 		
-	}
-
-    public static void main(String[] args){
-		//Nothing needs to occur here as we are running main from front page
 	}
 
 }

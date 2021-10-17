@@ -306,14 +306,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
           i++;
         }
     }
-
-
-    public static void main(String[] args){
-     //Main code is run in the class constructor
-    }
-
     
-
     // if button is pressed
     public void actionPerformed(ActionEvent e){
         String s = e.getActionCommand();
