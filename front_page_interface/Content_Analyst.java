@@ -29,6 +29,8 @@ public class Content_Analyst extends JFrame implements ActionListener {
     private static ArrayList<String> ratingList;
 	  private static ArrayList<String> dateList;
     private static ArrayList<String> titleList;
+    private static ArrayList<String> titleList2;
+    public static ArrayList<String> titleListtest;
     private static HashMap<String, Integer> first_time = new HashMap<>();
     private static HashMap<String, Integer> second_time = new HashMap<>();
     private static HashMap<String, Integer> third_time = new HashMap<>();
@@ -49,7 +51,8 @@ public class Content_Analyst extends JFrame implements ActionListener {
     public static HashMap<String, Double> title_rating = new HashMap<>();
     public static HashMap<String, Double> average_pair_rating = new HashMap<>();
     public static ArrayList<String> topPairFinal = new ArrayList<String>();
-
+    public static String user_titleId1;
+    public static String user_titleId2;
 
     //This function is the constructor which will be called in other classes, it will start all database operations and eventually call the JFrame
     public Content_Analyst(){
@@ -151,11 +154,210 @@ public class Content_Analyst extends JFrame implements ActionListener {
       JOptionPane.showMessageDialog(null, "Developing Hollywood Pairs...");
       hollywood_pair();
       JOptionPane.showMessageDialog(null, "Developing Rotten Tomatoes...");
-      titleId1 = JOptionPane.showInputDialog(null, "Please Enter title Id 1");
-      titleId2 = JOptionPane.showInputDialog(null, "Please Enter title Id 2");
+      user_titleId1 = JOptionPane.showInputDialog(null, "Please Enter titleId 1");
+      user_titleId2 = JOptionPane.showInputDialog(null, "Please Enter titleId 2");
       tomato_number();
       JOptionPane.showMessageDialog(null, "Done");
       callGUI();
+    }
+
+    public static String tomato_num = "";
+    public static String test_num = "";
+    public static String tomato_path = "";
+
+    //Gets the lists 
+    public static String querying(ArrayList<String> list, Statement state, String result ){
+      for(Object var: list){
+        try{
+        String statement = "SELECT originaltitle FROM Content where (titleid = \'" + var + "\' )";
+        ResultSet res = state.executeQuery(statement);
+        while(res.next()){
+          result += res.getString("originalTitle")  + "\n" ;
+        }
+      }catch (Exception e){
+        JOptionPane.showMessageDialog(null,"Error accessing Database.");
+      }
+    }
+      return result;
+    }
+
+
+
+    public void tomato_number() {
+      //Building the connection
+      Connection conn = null;
+      //TODO STEP 1
+      try {
+        Class.forName("org.postgresql.Driver");
+          conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+             "csce315903_14user", "GROUP14CS315");
+          Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+        
+        // get all users who rated the specific movies
+        String sqlstatment2 = "SELECT userId, rating, titleId FROM Users WHERE ('" + user_titleId1 + "' = ANY(titleId) OR '" + user_titleId2 + "' = ANY(titleId));";
+        ResultSet result = stmt.executeQuery(sqlstatment2);
+        String rating_string = "";
+        String title_string = "";
+        int title1_index = -1;
+        int title2_index = -1;
+        int title3_index = -1;
+        ArrayList<String> userList1 = new ArrayList<String>(); // list of all users who rated title1 above a 3
+        ArrayList<String> userList2 = new ArrayList<String>(); // list of all users who rated title2 above a 3
+        ArrayList<String> userList3 = new ArrayList<String>(); // list of all users who rated title3 above a 3
+        ArrayList<String> possibleTitle3List = new ArrayList<String>(); // list of all users who rated title3 above a 3
+        ArrayList<String> intersectList1 = new ArrayList<String>(); // list of all users who have titles 1 and 3 in common
+        ArrayList<String> intersectList2 = new ArrayList<String>(); // list of all users who have titles 3 and 2 in common
+        
+        while (result.next()) {
+          // Putting titleIds into an array
+          title_string += result.getString("titleId");
+          title_string = title_string.replace("{", "").replace("}", ",");
+          titleList = new ArrayList<String>(Arrays.asList(title_string.split(",")));
+          
+          // Getting index of User title 1
+          if (!(titleList.indexOf(String.valueOf(user_titleId1)) < 1)){
+            title1_index = titleList.indexOf(String.valueOf(user_titleId1));
+          }
+  
+          // Getting index of User title 2
+          if (!(titleList.indexOf(String.valueOf(user_titleId2)) < 1)){
+            title2_index = titleList.indexOf(String.valueOf(user_titleId2));
+
+          }
+  
+          // Putting ratings into an array
+          rating_string += result.getString("rating");
+          rating_string = rating_string.replace("{", "").replace("}", ",");
+          ratingList = new ArrayList<String>(Arrays.asList(rating_string.split(",")));
+  
+          // Getting rating of title 1 for this user
+          try {
+            if (Integer.valueOf(ratingList.get(title1_index)) >= 4){
+              userList1.add(result.getString("userId"));
+              // System.out.println(result.getString("userId") + ": Title1 rating = " + ratingList.get(title1_index));
+            } else {
+              // System.out.println(result.getString("userId") + " didn't rate title 1 higher than a 3");
+            }
+          } catch  (IndexOutOfBoundsException e) {
+            ; // If user didn't rate this title, just continue
+            // System.out.println(result.getString("userId") + " didn't rate title 1");
+          }
+          
+          // Getting rating of title 2 for this user
+          try {
+            if (Integer.valueOf(ratingList.get(title2_index)) >= 4){
+              userList2.add(result.getString("userId"));
+              // System.out.println(result.getString("userId") + ": Title2 rating = " + ratingList.get(title2_index));
+            } else {
+              // System.out.println(result.getString("userId") + " didn't rate title 2 higher than a 3");
+            }
+          } catch (IndexOutOfBoundsException e) {
+            ; // If user didn't rate this title, just continue
+            // System.out.println(result.getString("userId") + " didn't rate title 2");
+          }
+  
+  
+          // Clearing the variables for future user
+          title_string = "";
+          title1_index = -1;
+          title2_index = -1;
+          // titleList.clear();
+          rating_string = "";
+          ratingList.clear();
+        }
+  
+        // System.out.println(titleList);
+        String title3Id;
+        for (int i = 0; i < titleList.size()-1; i++) {
+          title3Id = titleList.get(i);
+          // System.out.println("Id of title at " + i + " = " + titleList.get(i));
+          sqlstatment2 = "SELECT userId, rating, titleId FROM Users WHERE ('" + titleList.get(i) + "' = ANY(titleId));";
+          result = stmt.executeQuery(sqlstatment2);
+          while (result.next()) {
+            // Putting titleIds into an array
+            title_string += result.getString("titleId");
+            title_string = title_string.replace("{", "").replace("}", ",");
+            titleList2 = new ArrayList<String>(Arrays.asList(title_string.split(",")));
+            // System.out.println("TitleList = " + titleList2);
+            
+            // Getting index of User title
+            if (!(titleList2.indexOf(String.valueOf(titleList.get(i))) < 1)){
+              title3_index = titleList2.indexOf(String.valueOf(titleList.get(i)));
+              // System.out.println(result.getString("userId") + ": Title3 index = " + title3_index);
+            }
+    
+            // Putting ratings into an array
+            rating_string += result.getString("rating");
+            rating_string = rating_string.replace("{", "").replace("}", ",");
+            ratingList = new ArrayList<String>(Arrays.asList(rating_string.split(",")));
+    
+            // Getting rating of title for this user
+            try {
+              if (Integer.valueOf(ratingList.get(title3_index)) >= 4){
+                userList3.add(result.getString("userId"));
+                // System.out.println(result.getString("userId") + ": Title1 rating = " + ratingList.get(title1_index));
+              } else {
+                // System.out.println(result.getString("userId") + " didn't rate title 1 higher than a 3");
+              }
+            } catch  (IndexOutOfBoundsException e) {
+              ; // If user didn't rate this title, just continue
+              // System.out.println(result.getString("userId") + " didn't rate title 1");
+            }
+    
+    
+            // Clearing the variables for future user
+            title_string = "";
+            title3_index = -1; // t
+            titleList2.clear();
+            rating_string = "";
+            ratingList.clear();
+          }
+  
+          // Now we have userList3
+          intersectList1 = intersection(userList1, userList3);
+          intersectList2 = intersection(userList3, userList2);
+          if (intersectList1.isEmpty() || intersectList2.isEmpty()) {
+            System.out.println("Intersect List is Empty, NO INTERSECTION, going on to next title");
+            continue;
+          } else {
+            System.out.println("Found intersection between all of them!");
+            // Getting names of titles
+            String origName1 = "";
+            String origName2 = "";
+            String origName3 = "";
+            sqlstatment2 = "SELECT titleId, originalTitle FROM Content WHERE (titleId = " + user_titleId1 + " OR titleId = " + title3Id + " OR titleId = " + user_titleId2 + ");";
+            result = stmt.executeQuery(sqlstatment2);
+            while (result.next()) {
+              if (result.getString("titleId").equals(String.valueOf(user_titleId1))){
+                origName1 = result.getString("originalTitle");
+              }
+              if (result.getString("titleId").equals(title3Id)){
+                origName2 = result.getString("originalTitle");
+              }
+              if (result.getString("titleId").equals(String.valueOf(user_titleId2))){
+                origName3 = result.getString("originalTitle");
+              }
+            }
+            // getting the shortest tomato number and route
+  
+  
+            /*********************************** tomato_path ************************************************** */
+            tomato_path = origName1 + "-->" + intersectList1.get(0) + "-->" + origName2 +  "-->" + intersectList2.get(0) + "-->" + origName3;
+            /************************************************************************************************** */
+  
+            
+            System.out.println(tomato_path);
+            break;
+          }
+  
+        }
+  
+      } catch (Exception e){
+        // JOptionPane.showMessageDialog(null,"Error accessing Database.");
+        e.printStackTrace();
+        System.err.println(e.getClass().getName()+": "+e.getMessage());
+        System.exit(0);
+      }
     }
 
     //This function returns the actors/actresses with the highest chemistry rating
@@ -366,7 +568,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
       JLabel labelList3 = new JLabel("Top 10 Most watched Content between 2003 and 2005");
       JLabel labelList4 = new JLabel("Top 10 Most watched Content after 2005");
       JLabel labelHolly = new JLabel("Top 10 Pairs With The Most Chemistry");
-
+      JLabel labelTomato = new JLabel(tomato_path);
 
 
       labelList1.setHorizontalAlignment(JLabel.CENTER);
@@ -379,11 +581,14 @@ public class Content_Analyst extends JFrame implements ActionListener {
       labelList4.setVerticalAlignment(JLabel.CENTER);
       labelHolly.setHorizontalAlignment(JLabel.CENTER);
       labelHolly.setVerticalAlignment(JLabel.CENTER);
+      labelTomato.setHorizontalAlignment(JLabel.CENTER);
+      labelTomato.setVerticalAlignment(JLabel.CENTER);
       labelList1.setFont(new Font("Times New Roman", Font.PLAIN, 15));
       labelList2.setFont(new Font("Times New Roman", Font.PLAIN, 15));
       labelList3.setFont(new Font("Times New Roman", Font.PLAIN, 15));
       labelList4.setFont(new Font("Times New Roman", Font.PLAIN, 15));
       labelHolly.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+      labelTomato.setFont(new Font("Times New Roman", Font.PLAIN, 22));
 
 
       JTextArea list1 = new JTextArea(nameList1);
@@ -415,7 +620,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
 
       tp.add("Top 10 Watched", top10);
       tp.add("Hollywood Pairs", hollyWood);
-      tp.add("Top 10 Rating", ratingList);
+      tp.add("Fresh Rotten Tomatoes", ratingList);
 
       top10.setSize(900,1000);
       hollyWood.setSize(900,1000);
@@ -437,6 +642,10 @@ public class Content_Analyst extends JFrame implements ActionListener {
       hollyWood.setLayout(new GridLayout(2,1));
       hollyWood.add(labelHolly);
       hollyWood.add(scrollPaneTen);
+
+      //Setting up the panel for Fresh Tomatoes
+      ratingList.setLayout(new GridLayout(1,1));
+      ratingList.add(labelTomato);
 
       
 
