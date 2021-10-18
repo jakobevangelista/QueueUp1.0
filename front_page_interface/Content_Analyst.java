@@ -19,10 +19,12 @@ import java.util.*;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Enumeration;
-
+import java.io.OutputStream;
 
 public class Content_Analyst extends JFrame implements ActionListener {
     static JFrame contentAnalyst;
+
+    //all arrays are important for gather watch trends and to be used within other functions
     private static ArrayList<LocalDate> dates;
     private static ArrayList<String> ratingList;
 	  private static ArrayList<String> dateList;
@@ -41,16 +43,18 @@ public class Content_Analyst extends JFrame implements ActionListener {
     public static String nameList3 = "";
     public static String nameList4 = "";
 
+    //all arrays will be used for developing hollywood pairs
     public static HashMap<String, ArrayList<String>> title_castmembers = new HashMap<>();
     public static HashMap<String, ArrayList<String>> pair_title = new HashMap<>();  
     public static HashMap<String, Double> title_rating = new HashMap<>();
     public static HashMap<String, Double> average_pair_rating = new HashMap<>();
-    public static String top_pair = "";
+    public static ArrayList<String> topPairFinal = new ArrayList<String>();
+
 
     //This function is the constructor which will be called in other classes, it will start all database operations and eventually call the JFrame
-    
     public Content_Analyst(){
       Connection conn = null;
+      JOptionPane.showMessageDialog(null, "Developing Watch Trends...");
       try {
           Class.forName("org.postgresql.Driver");
           conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db", "csce315903_14user", "GROUP14CS315");
@@ -86,18 +90,13 @@ public class Content_Analyst extends JFrame implements ActionListener {
           date_creating();
           hashing();
           
-          
           HashMap<String, Integer> first_sorted = sort_hash(first_time);
           HashMap<String, Integer> second_sorted = sort_hash(second_time);
           HashMap<String, Integer> third_sorted = sort_hash(third_time);
           HashMap<String, Integer> fourth_sorted = sort_hash(fourth_time);
-  
-          //counter 
-          int counter = 0;
-          
-          for(HashMap.Entry<String, Integer> set: first_sorted.entrySet())
-          {
-          
+   
+          int counter = 0;        
+          for(HashMap.Entry<String, Integer> set: first_sorted.entrySet()){
               first_list.add(set.getKey());
               counter++;
               if(counter == 10){
@@ -105,49 +104,37 @@ public class Content_Analyst extends JFrame implements ActionListener {
               }
           } 
 
-        counter = 0;
-        for(HashMap.Entry<String, Integer> set: second_sorted.entrySet())
-        {
-          // System.out.println(set.getKey() + " = " + set.getValue());
-          second_list.add(set.getKey());
-          counter++;
-          if(counter == 10){
-            break;
-          }
-        } 
+          counter = 0;
+          for(HashMap.Entry<String, Integer> set: second_sorted.entrySet()){
+            second_list.add(set.getKey());
+            counter++;
+            if(counter == 10){
+              break;
+            }
+          } 
 
-        counter = 0;
+          counter = 0;
+          for(HashMap.Entry<String, Integer> set: third_sorted.entrySet()){
+            third_list.add(set.getKey());
+            counter++;
+            if(counter == 10){
+              counter = 0;
+              break;
+            }
+          } 
 
-        for(HashMap.Entry<String, Integer> set: third_sorted.entrySet())
-        {
-          // System.out.println(set.getKey() + " = " + set.getValue());
-          third_list.add(set.getKey());
-          counter++;
-          
-          if(counter == 10){
-            counter = 0;
-            break;
-          }
-        } 
-
-        counter = 0;
-        for(HashMap.Entry<String, Integer> set: fourth_sorted.entrySet())
-        {
-          fourth_list.add(set.getKey());
-          counter++;
-          if(counter == 10){
-            break;
-          }
-        } 
-        
-        //creating a new panel
-        nameList1 = querying(first_list, stmt, nameList1);
-        nameList2 = querying(second_list, stmt, nameList2);
-        nameList3 = querying(third_list, stmt, nameList3);
-        nameList4 = querying(fourth_list, stmt, nameList4);
-
-
-        
+          counter = 0;
+          for(HashMap.Entry<String, Integer> set: fourth_sorted.entrySet()){
+            fourth_list.add(set.getKey());
+            counter++;
+            if(counter == 10){
+              break;
+            }
+          } 
+          nameList1 = querying(first_list, stmt, nameList1);
+          nameList2 = querying(second_list, stmt, nameList2);
+          nameList3 = querying(third_list, stmt, nameList3);
+          nameList4 = querying(fourth_list, stmt, nameList4);
       } catch (Exception e) {
         e.printStackTrace();
         System.err.println(e.getClass().getName()+": "+e.getMessage());
@@ -159,19 +146,27 @@ public class Content_Analyst extends JFrame implements ActionListener {
       } catch(Exception e) {
           JOptionPane.showMessageDialog(null,e);
       }
-      
+
+      //Running the rest of the functions, the code before was for developing the watch trends
+      JOptionPane.showMessageDialog(null, "Developing Hollywood Pairs...");
       hollywood_pair();
+      JOptionPane.showMessageDialog(null, "Developing Rotten Tomatoes...");
+      titleId1 = JOptionPane.showInputDialog(null, "Please Enter title Id 1");
+      titleId2 = JOptionPane.showInputDialog(null, "Please Enter title Id 2");
+      tomato_number();
+      JOptionPane.showMessageDialog(null, "Done");
       callGUI();
     }
 
+    //This function returns the actors/actresses with the highest chemistry rating
     static public void hollywood_pair(){
       Connection conn = null;
-      //TODO STEP 1
       try {
         Class.forName("org.postgresql.Driver");
         conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
            "csce315903_14user", "GROUP14CS315");
         Statement stmt = conn.createStatement();
+        
         //getting all the contents titleid, rating, originaltitle 
         String sqlstatment1 = "SELECT Content.titleid, Content.originalTitle, Content.averageRating, CastMembers.nameId, namelookup.primaryname FROM Content INNER JOIN CastMembers ON Content.titleId=CastMembers.titleId INNER JOIN Namelookup ON Namelookup.nameid = castmembers.nameid WHERE (castmembers.category = 'actor' OR castmembers.category = 'actress');";
         ResultSet result = stmt.executeQuery(sqlstatment1);
@@ -179,15 +174,13 @@ public class Content_Analyst extends JFrame implements ActionListener {
             String content = result.getString("titleid");
             ArrayList<String> ary;
             
-            if(title_castmembers.get(content) != null)
-            {
+            if(title_castmembers.get(content) != null){
                 ary = title_castmembers.get(content);
                 ary.add(result.getString("primaryName"));
                 title_castmembers.put(content, ary);
                 double rating = Double.parseDouble(result.getString("averageRating"));
                 title_rating.put(content, rating);
-            }
-            else {
+            } else {
               ary = new ArrayList<String>();
               ary.add(result.getString("primaryName"));
               title_castmembers.put(content, ary);
@@ -201,28 +194,27 @@ public class Content_Analyst extends JFrame implements ActionListener {
           {
             for(int i = 0; i < ary.size(); i++)
             {
-                for(int j = i + 1; j < ary.size(); j++)
-                {
-                    //making the pair going through all the array 
-                    String pairs = ary.get(i) + " , " + ary.get(j);
-                    ArrayList<String> ary_title;
-                    if(pair_title.containsKey(pairs))
-                    {
-                      ary_title = pair_title.get(pairs);
-                      ary_title.add(entry.getKey());
-                      pair_title.put(pairs, ary_title);
-                    }
-                    else
-                    {
-                      ary_title = new ArrayList<>();
-                      ary_title.add(entry.getKey());
-                      pair_title.put(pairs, ary_title);
-                    }
-
+              for(int j = i + 1; j < ary.size(); j++)
+              {
+                  //making the pair going through all the array 
+                  String pairs = ary.get(i) + " , " + ary.get(j);
+                  ArrayList<String> ary_title;
+                  if(pair_title.containsKey(pairs))
+                  {
+                    ary_title = pair_title.get(pairs);
+                    ary_title.add(entry.getKey());
+                    pair_title.put(pairs, ary_title);
+                  }
+                  else
+                  {
+                    ary_title = new ArrayList<>();
+                    ary_title.add(entry.getKey());
+                    pair_title.put(pairs, ary_title);
+                  }
                 }
+              }
             }
           }
-        }
 
         //getting the average rating of all of the pairs 
         for(Map.Entry<String, ArrayList<String>> entry : pair_title.entrySet())
@@ -242,12 +234,11 @@ public class Content_Analyst extends JFrame implements ActionListener {
           
         }
          
-        
         HashMap<String, Double> shorted_pair = sort_hashDouble(average_pair_rating);
         //setting the counter to just get to 10 pairs 
         int counter = 0;
         for(Map.Entry<String, Double> entry : shorted_pair.entrySet()){
-          top_pair +=  entry.getKey() + "\n";
+          topPairFinal.add(entry.getKey());
           counter++;
           if(counter == 10)
           {
@@ -260,108 +251,6 @@ public class Content_Analyst extends JFrame implements ActionListener {
       }
     }
 
-
-    static public void callGUI(){
-        //Intial set up of materials
-        contentAnalyst = new JFrame("Content Analyst Experience");
-
-
-        //Creating some cruical components
-        JLabel labelList1 = new JLabel("Top 10 Most watched Content Before 2001");
-        JLabel labelList2 = new JLabel("Top 10 Most watched Content between 2001 and 2003");
-        JLabel labelList3 = new JLabel("Top 10 Most watched Content between 2003 and 2005");
-        JLabel labelList4 = new JLabel("Top 10 Most watched Content after 2005");
-        JLabel labelHolly = new JLabel("Top 10 Pairs With The Most Chemistry");
-
-
-
-        labelList1.setHorizontalAlignment(JLabel.CENTER);
-        labelList1.setVerticalAlignment(JLabel.CENTER);
-        labelList2.setHorizontalAlignment(JLabel.CENTER);
-        labelList2.setVerticalAlignment(JLabel.CENTER);
-        labelList3.setHorizontalAlignment(JLabel.CENTER);
-        labelList3.setVerticalAlignment(JLabel.CENTER);
-        labelList4.setHorizontalAlignment(JLabel.CENTER);
-        labelList4.setVerticalAlignment(JLabel.CENTER);
-        labelHolly.setHorizontalAlignment(JLabel.CENTER);
-        labelHolly.setVerticalAlignment(JLabel.CENTER);
-        labelList1.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-        labelList2.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-        labelList3.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-        labelList4.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-        labelHolly.setFont(new Font("Times New Roman", Font.PLAIN, 25));
-
-
-        JTextArea list1 = new JTextArea(nameList1);
-        JTextArea list2 = new JTextArea(nameList2);
-        JTextArea list3 = new JTextArea(nameList3);
-        JTextArea list4 = new JTextArea(nameList4);
-        JTextArea hollyWoodText = new JTextArea(top_pair);
-        JScrollPane scrollPane1 = new JScrollPane(list1);
-        JScrollPane scrollPane2 = new JScrollPane(list2);
-        JScrollPane scrollPane3 = new JScrollPane(list3);
-        JScrollPane scrollPane4 = new JScrollPane(list4);
-        JScrollPane scrollPaneHolly = new JScrollPane(hollyWoodText);
-
-        
-        JTabbedPane tp = new JTabbedPane();
-        JPanel top10 = new JPanel();
-        JPanel hollyWood = new JPanel();
-        JPanel ratingList = new JPanel();
-
-        tp.add("Top 10 Watched", top10);
-        tp.add("Hollywood Pairs", hollyWood);
-        tp.add("Top 10 Rating", ratingList);
-
-        top10.setSize(900,1000);
-        hollyWood.setSize(900,1000);
-        ratingList.setSize(900,1000);
-       
-
-
-        //Setting up the view for the JFrame
-        top10.add(labelList1);
-        top10.add(scrollPane1);
-
-        top10.add(labelList2);
-        top10.add(scrollPane2);
-
-        top10.add(labelList3);
-        top10.add(scrollPane3);
-
-        top10.add(labelList4);
-        top10.add(scrollPane4);
-
-
-        hollyWood.setLayout(new GridLayout(2,1));
-        hollyWood.add(labelHolly);
-        hollyWood.add(scrollPaneHolly);
-
-        
-
-        contentAnalyst.setSize(900,1000);
-        contentAnalyst.add(tp);
-        top10.setLayout(new GridLayout(4,2));
-        contentAnalyst.show();
-   
-    }
-
-    //Gets the lists 
-    public static String querying(ArrayList<String> list, Statement state, String result ){
-      for(Object var: list){
-        try{
-        String statement = "SELECT originaltitle FROM Content where (titleid = \'" + var + "\' )";
-        ResultSet res = state.executeQuery(statement);
-        while(res.next()){
-          result += res.getString("originalTitle")  + "\n" ;
-        }
-      }catch (Exception e){
-        JOptionPane.showMessageDialog(null,"Error accessing Database.");
-      }
-    }
-      return result;
-    }
-
     public static HashMap<String, Double> sort_hashDouble(HashMap<String, Double> unsortedMap)
     {
       // Create a list from elements of HashMap
@@ -369,8 +258,7 @@ public class Content_Analyst extends JFrame implements ActionListener {
 
       // Sort the list
       Collections.sort(list, new Comparator<Map.Entry<String, Double> >() {
-        public int compare(Map.Entry<String, Double> o1,
-                            Map.Entry<String, Double> o2)
+        public int compare(Map.Entry<String, Double> o1, Map.Entry<String, Double> o2)
         {
             return -(o1.getValue()).compareTo(o2.getValue());
         }
@@ -445,6 +333,121 @@ public class Content_Analyst extends JFrame implements ActionListener {
         }
     }
 
+    public <String> ArrayList<String> intersection(ArrayList<String> list1, ArrayList<String> list2) {
+      ArrayList<String> list = new ArrayList<String>();
+      for (String t : list1) {
+        if(list2.contains(t)) {
+          list.add(t);
+        }
+      }
+  
+      return list;
+    }
+
+    // if button is pressed
+    public void actionPerformed(ActionEvent e){
+      String s = e.getActionCommand();
+      if (s.equals("Close")){
+          contentAnalyst.dispose();
+      }
+      else if (s.equals("<2001")){
+         //Nothing for now
+      }
+    }
+
+    static public void callGUI(){
+      //Intial set up of materials
+      contentAnalyst = new JFrame("Content Analyst Experience");
+
+
+      //Creating some cruical components
+      JLabel labelList1 = new JLabel("Top 10 Most watched Content Before 2001");
+      JLabel labelList2 = new JLabel("Top 10 Most watched Content between 2001 and 2003");
+      JLabel labelList3 = new JLabel("Top 10 Most watched Content between 2003 and 2005");
+      JLabel labelList4 = new JLabel("Top 10 Most watched Content after 2005");
+      JLabel labelHolly = new JLabel("Top 10 Pairs With The Most Chemistry");
+
+
+
+      labelList1.setHorizontalAlignment(JLabel.CENTER);
+      labelList1.setVerticalAlignment(JLabel.CENTER);
+      labelList2.setHorizontalAlignment(JLabel.CENTER);
+      labelList2.setVerticalAlignment(JLabel.CENTER);
+      labelList3.setHorizontalAlignment(JLabel.CENTER);
+      labelList3.setVerticalAlignment(JLabel.CENTER);
+      labelList4.setHorizontalAlignment(JLabel.CENTER);
+      labelList4.setVerticalAlignment(JLabel.CENTER);
+      labelHolly.setHorizontalAlignment(JLabel.CENTER);
+      labelHolly.setVerticalAlignment(JLabel.CENTER);
+      labelList1.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+      labelList2.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+      labelList3.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+      labelList4.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+      labelHolly.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+
+
+      JTextArea list1 = new JTextArea(nameList1);
+      JTextArea list2 = new JTextArea(nameList2);
+      JTextArea list3 = new JTextArea(nameList3);
+      JTextArea list4 = new JTextArea(nameList4);
+
+      JScrollPane scrollPane1 = new JScrollPane(list1);
+      JScrollPane scrollPane2 = new JScrollPane(list2);
+      JScrollPane scrollPane3 = new JScrollPane(list3);
+      JScrollPane scrollPane4 = new JScrollPane(list4);
+
+      //Adding all the elements from ten recent dates to the JFrame
+      DefaultListModel dlmTen = new DefaultListModel();
+      JList listTen = new JList(dlmTen);
+      JScrollPane scrollPaneTen = new JScrollPane(listTen);
+
+      for(String word : topPairFinal){
+        dlmTen.addElement(word);
+      }
+      listTen.setFont(new Font("Times New Roman", Font.PLAIN, 22));
+      DefaultListCellRenderer rendererTen =  (DefaultListCellRenderer)listTen.getCellRenderer();  
+      rendererTen.setHorizontalAlignment(JLabel.CENTER);  
+      
+      JTabbedPane tp = new JTabbedPane();
+      JPanel top10 = new JPanel();
+      JPanel hollyWood = new JPanel();
+      JPanel ratingList = new JPanel();
+
+      tp.add("Top 10 Watched", top10);
+      tp.add("Hollywood Pairs", hollyWood);
+      tp.add("Top 10 Rating", ratingList);
+
+      top10.setSize(900,1000);
+      hollyWood.setSize(900,1000);
+      ratingList.setSize(900,1000);
+     
+
+
+      //Setting up the view for the Top 10 Watch History
+      top10.add(labelList1);
+      top10.add(scrollPane1);
+      top10.add(labelList2);
+      top10.add(scrollPane2);
+      top10.add(labelList3);
+      top10.add(scrollPane3);
+      top10.add(labelList4);
+      top10.add(scrollPane4);
+
+      //Setting up the panel for Hollyword pairs
+      hollyWood.setLayout(new GridLayout(2,1));
+      hollyWood.add(labelHolly);
+      hollyWood.add(scrollPaneTen);
+
+      
+
+      contentAnalyst.setSize(900,1000);
+      contentAnalyst.add(tp);
+      top10.setLayout(new GridLayout(4,2));
+      contentAnalyst.show();
+ 
+  }
+  
+
 
     public static void main(String[] args){
      //Main code is run in the class constructor
@@ -452,14 +455,6 @@ public class Content_Analyst extends JFrame implements ActionListener {
 
     
 
-    // if button is pressed
-    public void actionPerformed(ActionEvent e){
-        String s = e.getActionCommand();
-        if (s.equals("Close")){
-            contentAnalyst.dispose();
-        }
-        else if (s.equals("<2001")){
-           //Nothing for now
-        }
-    }
+    
+    
 }
