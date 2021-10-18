@@ -12,7 +12,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet; 
-import java.util.Collections; 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.*;
 
 
 public class CViewer extends JFrame implements ActionListener{
@@ -23,6 +27,7 @@ public class CViewer extends JFrame implements ActionListener{
 	private ArrayList<String> dateList;
 	private ArrayList<String> titleList;
 	private ArrayList<String> directorList;
+	private ArrayList<String> genreList;
 	// sorted instances of ratings, dates, and titles
 	static private ArrayList<LocalDate> dateListSorted;
 	static private ArrayList<Integer> titleListSorted;
@@ -49,6 +54,7 @@ public class CViewer extends JFrame implements ActionListener{
 		sortByDate();
 		askForHistoryLength();
 		callDatabase();
+		directorsChoice(uid);
 		createGUI();
 
 	}
@@ -306,9 +312,15 @@ public class CViewer extends JFrame implements ActionListener{
 
 	}
 
-	private ArrayList<String> directorsChoice() {
+	private ArrayList<String> directorsChoice(int uid) {
+		ArrayList<String> result = new ArrayList<String>();
 		// dont forget we added a get director list into fetchwatchhistory when merging
 		// also dont forget included linkedlisthashset
+		// grab all titles from users and get
+		HashMap<String, Integer> directorListOccurence = new HashMap<String, Integer>();
+		HashMap<String, Integer> directorListRating = new HashMap<String, Integer>();
+		HashMap<String, Double> directorListRatingAverage = new HashMap<String, Double>();
+		ArrayList<String> directorListTemp = new ArrayList<String>();
 		Connection conn = null;
 		try {
 			//open a connection
@@ -316,7 +328,7 @@ public class CViewer extends JFrame implements ActionListener{
 	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
 	           "csce315903_14user", "GROUP14CS315");
 	        Statement stmt = conn.createStatement();
-			for(String i : titleList) {
+			for(Integer i : titleListSorted) {
 				// create sql statements to get info we need
 				String sqlStatement1 = "SELECT directornameId FROM ContentCreators WHERE titleId = " + i + ";";
 				// execute each statement and store info in string
@@ -327,10 +339,20 @@ public class CViewer extends JFrame implements ActionListener{
 				}
 				// remove { and } from string then convert string to java.util.ArrayList
 				director_string = director_string.replace("{", "").replace("}", "");
+				// System.out.println(director_string);
 				// convert list to array list and store it as private variable
-				directorList = new ArrayList<String>(Arrays.asList(director_string.split(",")));
-				conn.close();
+				directorListTemp = new ArrayList<String>(Arrays.asList(director_string.split(",")));
+				directorListOccurence.merge(directorListTemp.get(0),1,Integer::sum);
+				Integer count = directorListRating.get(directorListTemp.get(0));
+				// System.out.println(titleListSorted.indexOf(i));
+				if(count == null) {
+					directorListRating.put(directorListTemp.get(0), ratingListSorted.get(titleListSorted.indexOf(i)));
+				} else {
+					directorListRating.put(directorListTemp.get(0), count + ratingListSorted.get(titleListSorted.indexOf(i)));
+				}
+				directorListTemp.clear();
 			}
+			// conn.close();
 	    } catch (Exception e) {
 			e.printStackTrace();
 	        System.err.println(e.getClass().getName()+": "+e.getMessage());
@@ -339,50 +361,327 @@ public class CViewer extends JFrame implements ActionListener{
 	        return errorArray;
 	    }
 
-		// array of unique directors user has watched
-		LinkedHashSet<String> userWatchedDirectorsTemp = new LinkedHashSet<String>();
-		for(int i = 0; i < directorList.size(); i++) {
-			userWatchedDirectorsTemp.add(directorList.get(i));
+		// gets average of each director and sorts greatest to least
+		for (String key: directorListOccurence.keySet()) {
+            directorListRatingAverage.put(key, ((Double.valueOf(directorListRating.get(key))) / (Double.valueOf(directorListOccurence.get(key)))));
+        }
+		List<Map.Entry<String, Double> > list =
+			new LinkedList<Map.Entry<String, Double> >(directorListRatingAverage.entrySet());
+
+		// Sort the list
+		Collections.sort(list, new Comparator<Map.Entry<String, Double> >() {
+			public int compare(Map.Entry<String, Double> o2,
+							Map.Entry<String, Double> o1)
+			{
+				return (o1.getValue()).compareTo(o2.getValue());
+			}
+		});
+		
+		// put data from sorted list to hashmap
+		HashMap<String, Double> temp = new LinkedHashMap<String, Double>();
+		for (Map.Entry<String, Double> aa : list) {
+			temp.put(aa.getKey(), aa.getValue());
 		}
 
-		ArrayList<String> userWatchedDirectors = new ArrayList<String>();
-		for(String i : userWatchedDirectorsTemp) {
-			userWatchedDirectors.add(i);
-		}
-		// find all indices with the same director and add the rating to a list of lists which indicates rating of individual directors
-		ArrayList<ArrayList<Integer>> ratingOfDirectors = new ArrayList<ArrayList<Integer>>();
-		ArrayList<Integer> individualRatings = new ArrayList<Integer>();
-		for(int i = 0; i < userWatchedDirectors.size(); i++) {
-			for(int j = 0; j < directorList.size(); j++) {
-				if(userWatchedDirectors.get(i) == directorList.get(j)) {
-					individualRatings.add(Integer.valueOf(ratingList.get(j)));
+		directorListRatingAverage = temp;
+		// directorListRatingAverage.entrySet().forEach(entry -> {System.out.println(entry.getKey() + " " + entry.getValue());});
+
+		// gets all movies from every director
+		ArrayList<String> allMoviesTemp;
+		ArrayList<String> allMovies = new ArrayList<String>();
+		conn = null;
+		try {
+			//open a connection
+	        Class.forName("org.postgresql.Driver");
+	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+	           "csce315903_14user", "GROUP14CS315");
+	        Statement stmt = conn.createStatement();
+			for(String i : directorListRatingAverage.keySet()) {
+				if(i.equals("-1")) {
+					continue;
 				}
+				// System.out.println(i);
+				// create sql statements to get info we need
+				String sqlStatement1 = "SELECT titleId FROM contentCreators WHERE ('" + i + "' = ANY(directornameId));";
+				// execute each statement and store info in string
+				ResultSet allMovies_result = stmt.executeQuery(sqlStatement1);
+				String allMovies_string = "";
+				while (allMovies_result.next()) {
+					allMovies_string += allMovies_result.getString("titleId") + "~";
+				}
+
+				// remove { and } from string then convert string to java.util.ArrayList
+				allMovies_string = allMovies_string.replace("{", "").replace("}", "");
+				// convert list to array list and store it as private variable
+				allMoviesTemp = new ArrayList<String>(Arrays.asList(allMovies_string.split("~")));
+
+				ArrayList<String> averageRatingAllMovies = new ArrayList<String>();
+				for(String a : allMoviesTemp) {
+					String sqlStatement2 = "SELECT averageRating FROM content WHERE titleId = " + a + ";";
+					// execute each statement and store info in string
+					ResultSet allAverage_result = stmt.executeQuery(sqlStatement2);
+					String allAverage_string = "";
+					while (allAverage_result.next()) {
+						allAverage_string += allAverage_result.getString("averageRating");
+					}
+					// remove { and } from string then convert string to java.util.ArrayList
+					allAverage_string = allAverage_string.replace("{", "").replace("}", "");
+					// System.out.println(director_string);
+					// convert list to array list and store it as private variable
+					averageRatingAllMovies.add(allAverage_string);
+				}
+				// for(String j : averageRatingAllMovies) {
+				// 	System.out.println(j);
+				// }
+				ArrayList<String> averageRatingAllMoviesTemp = new ArrayList<String>();
+				while(allMoviesTemp.size() != 0) {
+					int highest = averageRatingAllMovies.indexOf(Collections.max(averageRatingAllMovies));
+					averageRatingAllMoviesTemp.add(allMoviesTemp.get(highest));
+					averageRatingAllMovies.remove(highest);
+					allMoviesTemp.remove(highest);
+				}
+				allMoviesTemp = averageRatingAllMoviesTemp;
+				
+	
+				allMovies.addAll(allMoviesTemp);
+				allMoviesTemp.clear();
 			}
-			ratingOfDirectors.add(individualRatings);
-			individualRatings.clear();
-		}
-		// average out ratings and fsort from largest to smallest
-		Double sum = 0.0;
-		ArrayList<Double> averageRatingOfDirector = new ArrayList<Double>();
-		for(int i = 0; i < ratingOfDirectors.size(); i++) {
-			for(int j = 0; j < ratingOfDirectors.get(i).size(); j++) {
-				sum += ratingOfDirectors.get(i).get(j);
-			}
-			averageRatingOfDirector.add(sum / (Double.valueOf(ratingOfDirectors.get(i).size())));
-			sum = 0.0;
-		}
+			// conn.close();
 			
-		ArrayList<String> sortedDirectorList = new ArrayList<String>();
-		while(userWatchedDirectors.size() != 0) {
-			int highestIndex = averageRatingOfDirector.indexOf(Collections.max(averageRatingOfDirector));
-			sortedDirectorList.add(userWatchedDirectors.get(highestIndex));
-			userWatchedDirectors.remove(highestIndex);
+	    } catch (Exception e) {
+			e.printStackTrace();
+	        System.err.println(e.getClass().getName()+": "+e.getMessage());
+			ArrayList<String> errorArray = new ArrayList<String>();
+			errorArray.add("error");
+	        return errorArray;
+	    }
+
+		// System.out.println("Do we get here5?");
+		// if all titles watched from current director, recommend next favorite director, repeat until found a director that the user has not seen a movie from yet
+		boolean foundMovie = false;
+		for(int i = 0; i < allMovies.size(); i++) {
+			if(titleList.contains(allMovies.get(i))) {
+				
+			} else {
+				conn = null;
+				try {
+					//open a connection
+					Class.forName("org.postgresql.Driver");
+					conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+					"csce315903_14user", "GROUP14CS315");
+					Statement stmt = conn.createStatement();
+					// System.out.println(i);
+					// create sql statements to get info we need
+					String sqlStatement1 = "SELECT originalTitle FROM content WHERE titleId=" + allMovies.get(i) + ";";
+					// execute each statement and store info in string
+					ResultSet after_result = stmt.executeQuery(sqlStatement1);
+					while (after_result.next()) {
+						result.add(after_result.getString("originalTitle"));
+					}
+					// System.out.println("Do we get here4?");
+					// remove { and } from string then convert string to java.util.ArrayList
+					// convert list to array list and store it as private variable
+					
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.err.println(e.getClass().getName()+": "+e.getMessage());
+					ArrayList<String> errorArray = new ArrayList<String>();
+					errorArray.add("error");
+					return errorArray;
+				}
+				System.out.println(result.get(0));
+				foundMovie = true;
+				// for(int k = 0; k < result.size(); k++) {
+				// 	System.out.println(result.get(k));
+				// }
+				return result;
+			}
 		}
 		
-		// then i have to pull director list, find title not watched yet, recommend it (have to do this the long way in its own arraylist)
-		// if all titles watched from current director, recommend next favorite director, repeat until found a director that the user has not seen a movie from yet
 		// if all movies from every director is seen, recommend most popular movie in favorite genre they havent seen
-		// repeat the getting genre, sorting by date, getting average rating, etc.
+		HashMap<String, Integer> genreListOccurence = new HashMap<String, Integer>();
+		HashMap<String, Integer> genreListRating = new HashMap<String, Integer>();
+		HashMap<String, Double> genreListRatingAverage = new HashMap<String, Double>();
+		ArrayList<String> genreListTemp = new ArrayList<String>();
+		conn = null;
+		try {
+			//open a connection
+	        Class.forName("org.postgresql.Driver");
+	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+	           "csce315903_14user", "GROUP14CS315");
+	        Statement stmt = conn.createStatement();
+			for(Integer i : titleListSorted) {
+				// create sql statements to get info we need
+				String sqlStatement1 = "SELECT genres FROM ContentCreators WHERE titleId = " + i + ";";
+				// execute each statement and store info in string
+				ResultSet genre_result = stmt.executeQuery(sqlStatement1);
+				String genre_string = "";
+				while (genre_result.next()) {
+					genre_string += genre_result.getString("genres");
+				}
+				// remove { and } from string then convert string to java.util.ArrayList
+				genre_string = genre_string.replace("{", "").replace("}", "");
+				// System.out.println(director_string);
+				// convert list to array list and store it as private variable
+				genreListTemp = new ArrayList<String>(Arrays.asList(genre_string.split(",")));
+				genreListOccurence.merge(genreListTemp.get(0),1,Integer::sum);
+				Integer count = genreListRating.get(genreListTemp.get(0));
+				// System.out.println(titleListSorted.indexOf(i));
+				if(count == null) {
+					genreListRating.put(genreListTemp.get(0), ratingListSorted.get(titleListSorted.indexOf(i)));
+				} else {
+					genreListRating.put(genreListTemp.get(0), count + ratingListSorted.get(titleListSorted.indexOf(i)));
+				}
+				genreListTemp.clear();
+			}
+			// conn.close();
+	    } catch (Exception e) {
+			e.printStackTrace();
+	        System.err.println(e.getClass().getName()+": "+e.getMessage());
+			ArrayList<String> errorArray = new ArrayList<String>();
+			errorArray.add("error");
+	        return errorArray;
+	    }
+
+		// gets average of each genre and sorts greatest to least
+		for (String key: genreListOccurence.keySet()) {
+            genreListRatingAverage.put(key, ((Double.valueOf(genreListRating.get(key))) / (Double.valueOf(genreListOccurence.get(key)))));
+        }
+		list = new LinkedList<Map.Entry<String, Double> >(genreListRatingAverage.entrySet());
+
+		// Sort the list
+		Collections.sort(list, new Comparator<Map.Entry<String, Double> >() {
+			public int compare(Map.Entry<String, Double> o2,
+							Map.Entry<String, Double> o1)
+			{
+				return (o1.getValue()).compareTo(o2.getValue());
+			}
+		});
+
+		// put data from sorted list to hashmap
+		HashMap<String, Double> genreTemp = new LinkedHashMap<String, Double>();
+		for (Map.Entry<String, Double> aa : list) {
+			genreTemp.put(aa.getKey(), aa.getValue());
+		}
+
+		genreListRatingAverage = genreTemp;
+		
+		// gets all movies from every genre
+		ArrayList<String> allMoviesGenreTemp;
+		ArrayList<String> allMoviesGenre = new ArrayList<String>();
+		conn = null;
+		try {
+			//open a connection
+	        Class.forName("org.postgresql.Driver");
+	        conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+	           "csce315903_14user", "GROUP14CS315");
+	        Statement stmt = conn.createStatement();
+			for(String i : genreListRatingAverage.keySet()) {
+				if(i.equals("-1")) {
+					continue;
+				}
+				// System.out.println(i);
+				// create sql statements to get info we need
+				String sqlStatement1 = "SELECT titleId FROM content WHERE ('" + i + "' = ANY(genres));";
+				// execute each statement and store info in string
+				ResultSet allMoviesGenre_result = stmt.executeQuery(sqlStatement1);
+				String allMoviesGenre_string = "";
+				while (allMoviesGenre_result.next()) {
+					allMoviesGenre_string += allMoviesGenre_result.getString("titleId") + "~";
+				}
+				// System.out.println("Do we get here4?");
+				// remove { and } from string then convert string to java.util.ArrayList
+				allMoviesGenre_string = allMoviesGenre_string.replace("{", "").replace("}", "");
+				// convert list to array list and store it as private variable
+				allMoviesGenreTemp = new ArrayList<String>(Arrays.asList(allMoviesGenre_string.split("~")));
+
+				ArrayList<String> averageRatingAllMoviesGenre = new ArrayList<String>();
+				for(String a : allMoviesGenreTemp) {
+					String sqlStatement2 = "SELECT averageRating FROM content WHERE titleId = " + a + ";";
+					// execute each statement and store info in string
+					ResultSet allAverageGenre_result = stmt.executeQuery(sqlStatement2);
+					String allAverageGenre_string = "";
+					while (allAverageGenre_result.next()) {
+						allAverageGenre_string += allAverageGenre_result.getString("averageRating");
+					}
+					// remove { and } from string then convert string to java.util.ArrayList
+					allAverageGenre_string = allAverageGenre_string.replace("{", "").replace("}", "");
+					// System.out.println(director_string);
+					// convert list to array list and store it as private variable
+					averageRatingAllMoviesGenre.add(allAverageGenre_string);
+				}
+				// for(String j : averageRatingAllMovies) {
+				// 	System.out.println(j);
+				// }
+				ArrayList<String> averageRatingAllMoviesGenreTemp = new ArrayList<String>();
+				while(allMoviesGenreTemp.size() != 0) {
+					int highest = averageRatingAllMoviesGenre.indexOf(Collections.max(averageRatingAllMoviesGenre));
+					averageRatingAllMoviesGenreTemp.add(allMoviesGenreTemp.get(highest));
+					averageRatingAllMoviesGenre.remove(highest);
+					allMoviesGenreTemp.remove(highest);
+				}
+				allMoviesGenreTemp = averageRatingAllMoviesGenreTemp;
+				
+				allMoviesGenre.addAll(allMoviesGenreTemp);
+				allMoviesGenreTemp.clear();
+			}
+			// conn.close();
+			
+	    } catch (Exception e) {
+			e.printStackTrace();
+	        System.err.println(e.getClass().getName()+": "+e.getMessage());
+			ArrayList<String> errorArray = new ArrayList<String>();
+			errorArray.add("error");
+	        return errorArray;
+	    }
+
+		// finds movie based on genre and recommends it
+		for(int i = 0; i < allMoviesGenre.size(); i++) {
+			result.add("You have watched every movie from every director you have seen, here is a top movie from your favorite genre: ");
+			if(titleList.contains(allMoviesGenre.get(i))) {
+				
+			} else {
+				conn = null;
+				try {
+					//open a connection
+					Class.forName("org.postgresql.Driver");
+					conn = DriverManager.getConnection("jdbc:postgresql://csce-315-db.engr.tamu.edu/csce315903_14db",
+					"csce315903_14user", "GROUP14CS315");
+					Statement stmt = conn.createStatement();
+					// System.out.println(i);
+					// create sql statements to get info we need
+					String sqlStatement1 = "SELECT originalTitle FROM content WHERE titleId=" + allMovies.get(i) + ";";
+					// execute each statement and store info in string
+					ResultSet after_result = stmt.executeQuery(sqlStatement1);
+					while (after_result.next()) {
+						result.add(after_result.getString("originalTitle"));
+					}
+					// System.out.println("Do we get here4?");
+					// remove { and } from string then convert string to java.util.ArrayList
+					// convert list to array list and store it as private variable
+					conn.close();
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.err.println(e.getClass().getName()+": "+e.getMessage());
+					ArrayList<String> errorArray = new ArrayList<String>();
+					errorArray.add("error");
+					return errorArray;
+				}
+				System.out.println(result.get(0));
+				System.out.println(result.get(1));
+				foundMovie = true;
+				// for(int k = 0; k < result.size(); k++) {
+				// 	System.out.println(result.get(k));
+				// }
+				return result;
+			}
+		}
+
+		ArrayList<String> errorArray = new ArrayList<String>();
+		errorArray.add("error");
+		return errorArray;
 	}
 
 	public void callDatabase(){
